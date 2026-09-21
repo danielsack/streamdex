@@ -2,98 +2,82 @@
 
 [![CI](https://github.com/danielsack/streamdex/actions/workflows/ci.yml/badge.svg)](https://github.com/danielsack/streamdex/actions/workflows/ci.yml)
 
-An experiment in ways of working with agentic workflows, using Stream Deck+ and Mobile to keep Codex tasks in view and put common controls within reach.
+I built Streamdex to experiment with how I work with AI agents. It puts eight Codex tasks on a Stream Deck+ or phone, so I can see what's running and which tasks need me, then jump into the conversation.
 
-Shared as an experimental snapshot. No support is provided, and there is no commitment to ongoing maintenance, updates, or compatibility fixes.
+I'm sharing the setup and the ideas behind it. If some of it is useful for your own workflow, great.
 
 <a href="docs/assets/streamdex-hero.mp4">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/hero-poster.jpg">
-    <img src="docs/assets/hero-preview.gif" alt="A fictional Codex conversation beside a moving 3D Stream Deck+: select a task to bring its question into view. Open the full walkthrough." width="800" height="450">
+    <img src="docs/assets/hero-preview.gif" alt="Codex beside a moving 3D Stream Deck+: select a task to bring its question into view. Open the full walkthrough." width="800" height="450">
   </picture>
 </a>
 
 *Five-second preview plays once. [Static preview](docs/assets/hero-poster.jpg).*
 
-**[▶ Watch the full walkthrough (37 seconds, 1.4 MB)](docs/assets/streamdex-hero.mp4)** · **[Try the interactive demo locally](#try-it-without-hardware)** · [Setup](#set-up-with-your-local-agent)
-
-The film uses fictional conversations and simulated interactions. Dictated replies are reviewed and sent in Codex. The hardware does not automatically answer questions or approve work.
-
-> **Experimental candidate: v0.1.0-beta.1.** The source snapshot is public; a packaged beta release has not been published. Fresh downloaded installation, physical-device acceptance, and a nontechnical walkthrough remain release gates. See [verification status](docs/VERIFICATION.md).
+**[Watch the walkthrough](docs/assets/streamdex-hero.mp4)** (37 seconds, 1.4 MB) · **[Try the demo](#try-it-without-hardware)** · **[Setup](#setup)**
 
 ## What is on the deck
 
-Eight task cards show a title, project, and status. RUN is blue with motion; INPUT pulses amber; ERROR pulses red on a subtle red background; READY is green; SEEN is gray. An unanswered question takes priority over running activity. SEEN means the response was opened, not that it was reviewed or approved.
+Each card shows a task title, project, and status. Running tasks have a moving blue border; questions pulse amber and errors pulse red. Green means a new response is ready. Gray means you've opened it.
 
-[![Task states: a moving blue RUN border, pulsing amber INPUT and red ERROR borders, green READY and gray SEEN](docs/assets/readme-status.gif)](docs/demo/index.html)
+[![Task states: moving blue RUN, pulsing amber INPUT and red ERROR, green READY and gray SEEN](docs/assets/readme-status.gif)](docs/demo/index.html)
 
-*Animation plays once. [View the static task-state guide](docs/assets/readme-status-still.png).*
+*Animation plays once. [Static task-state guide](docs/assets/readme-status-still.png).*
 
-Context controls follow the selected task. Approval and plan-start controls require a deliberate hold and a fresh, matching request. A hold approves only that specific request; it does not grant blanket permission. Change global permission settings inside Codex. Streamdex provides no Full Access switch or commit/push/deploy presets. Voice has separate microphone and agent-audio toggles (green when enabled, red when muted). When Voice ends, Quick chat and New task return to those positions. Dictation and Fast/Plan controls are available on both devices.
+The controls follow the selected task. Open its conversation or output, dictate a reply, or hold a control to approve the current request or start a plan. Dictation creates a draft that you review and send in Codex.
 
-[![Voice sequence: Quick chat and New task become microphone and speaker controls; each can be muted independently; the shortcuts return when Voice ends](docs/assets/readme-voice.gif)](docs/demo/index.html)
+Voice has separate microphone and speaker buttons: green when enabled, red when muted. When Voice ends, those controls switch back to Quick chat and New task.
 
-*Mobile keys shown; Stream Deck+ uses the touch strip. Animation plays once. [View the static Voice example](docs/assets/readme-voice-still.png).*
+[![Quick chat and New task become independent microphone and speaker controls during Voice, then return when Voice ends](docs/assets/readme-voice.gif)](docs/demo/index.html)
 
-<a href="docs/HARDWARE.md"><img src="docs/assets/streamdeck-photo.jpg" alt="A physical Stream Deck+ on a desk displaying fictional Streamdex task cards, touch controls and four dials; open the hardware guide for a larger photo" width="360" height="360"></a>
+*Mobile keys shown; Stream Deck+ uses the touch strip. [Static Voice example](docs/assets/readme-voice-still.png).*
 
-*The physical setup, photographed with fictional task labels. [Larger photo and layout guide](docs/HARDWARE.md).*
+<a href="docs/HARDWARE.md"><img src="docs/assets/streamdeck-photo.jpg" alt="My Stream Deck+ with task cards, touch controls and four dials; open the layout guide for a larger photo" width="360" height="360"></a>
 
-On Stream Deck+, the first page keeps all eight tasks together. The touch strip provides Voice/dictation, task actions, dynamic mic/audio controls, and More/Tasks navigation. Mobile uses a 5 × 3 layout with the same eight task cards; Fast and Plan live on More.
+*My Stream Deck+ setup. [Larger photo and layout guide](docs/HARDWARE.md).*
 
-[![Four dials: without lights, the first two are unassigned, dial three previews reasoning and applies it on press, and dial four controls volume and mute. With lights, the first two control brightness and power, and dial three controls temperature.](docs/assets/readme-dials.png)](docs/demo/index.html)
+On Stream Deck+, all eight tasks stay on the first page. The touch strip handles Voice, dictation, task actions, and navigation. Mobile uses a 5 × 3 layout, with Fast and Plan on the More page.
 
-| Dial | With optional Elgato lights | Without lights |
+The dials handle volume and optional Elgato lights. Without lights, the third dial lets you preview a reasoning level and press to apply it to the selected task.
+
+[![Four dials controlling optional lights, reasoning and Mac volume](docs/assets/readme-dials.png)](docs/demo/index.html)
+
+| Dial | With Elgato lights | Without lights |
 |---|---|---|
 | 1 | Light 1 brightness; press for power | Unassigned |
 | 2 | Light 2 brightness/power, if configured | Unassigned |
-| 3 | Configured lights’ color temperature | Preview reasoning; press to apply |
+| 3 | Light color temperature | Preview reasoning; press to apply |
 | 4 | Mac volume; press to mute | Same |
-
-A configured light going offline keeps its assignment. Reasoning previews expire and are tied to the same task and model. Spotify and meeting controls are outside this first release.
 
 ## Try it without hardware
 
-[![Interactive Streamdex model with fictional task buttons and guided scenarios](docs/assets/demo-preview.png)](docs/demo/index.html)
+[![Interactive Streamdex model with task buttons and guided scenarios](docs/assets/demo-preview.png)](docs/demo/index.html)
 
-Open **[docs/demo/index.html](docs/demo/index.html)** from a downloaded copy in your browser. Select tasks, open a question, mark a response seen, toggle Voice audio, and try the dial presets. The page includes keyboard-accessible controls, reduced motion, pause/reset, and a fallback when WebGL is unavailable. It uses no accounts, microphones, live tasks, analytics, or external libraries loaded over the network.
+Download this repository and open **[docs/demo/index.html](docs/demo/index.html)** in your browser. Turn the model, select a task, open a question, and try the Voice controls or dial presets. Keyboard controls, pause/reset, and reduced motion are available too. The demo runs locally without connecting to Codex or using your microphone.
 
-GitHub READMEs do not run JavaScript or embed live pages. The animations above are previews; the interactive demo runs on a separate page. The planned public demo address is `https://danielsack.github.io/streamdex/demo/`, which will only be enabled after publication review. Until then, run the local file or a local static server.
+## Setup
 
-## Set up with your local agent
+The source, profiles, and prebuilt components are in this repository. There isn't a published beta release yet. The [version and testing notes](docs/VERIFICATION.md) describe what has been checked.
 
-The kit includes prebuilt Apple Silicon components. You do not need Node or Xcode to install it.
+The setup targets **Apple Silicon Macs**, **English Codex UI**, **Stream Deck 7.1 or later**, and either Stream Deck+ or a **15-button Mobile layout**. Stream Deck Mobile may require an entitlement for that layout.
 
-1. Download and unzip the **reviewed setup kit** once a release is available (the staged candidate can be reviewed locally now).
-2. Open its folder in Codex, or another agent session with local filesystem and terminal access. A web-only or cloud session cannot install hardware software on your Mac.
-3. Paste this prompt:
+Start with the [installation guide](docs/INSTALL.md), which covers inspection, permissions, lights, backups, and rollback. To work through it with a local agent, open the downloaded folder in Codex and paste:
 
-> Read AGENTS.md and docs/INSTALL.md. Inspect this Streamdex kit and my local compatibility without changing anything first. Verify its checksums, explain the result, and help me install it using the normal Stream Deck installer. Ask whether I want zero, one, or two Elgato lights. Preserve my current setup and backups. Stop if the documented release gates or integrity checks are not satisfied. Do not bypass macOS security or organizational restrictions.
+> Read AGENTS.md and docs/INSTALL.md. Check whether this kit is ready to install on my Mac, verify its checksums, and walk me through the setup. Ask whether I use zero, one, or two Elgato lights. Back up my existing setup and show me how to roll back. Use the normal Stream Deck and macOS installation prompts.
 
-The setup helper supports `inspect`, `install`, `verify`, and `rollback`. It uses the separate `io.streamdex.plugin` plugin identity, backs up only affected Streamdex files, and leaves other plugins and profiles alone. Repeated installation of the same build is a no-op.
+The setup helper provides `inspect`, `install`, `verify`, and `rollback`. It preserves unrelated profiles and keeps your settings and read acknowledgements outside the plugin. For changes to the code, see the [build guide](docs/BUILD.md).
 
-See **[installation and rollback](docs/INSTALL.md)** for commands, lighting configuration, normal macOS approval prompts, and recovery. Read acknowledgements and configuration are stored in your user Application Support folder, outside the distributed plugin.
+## A note on privacy
 
-## Compatibility and limits
-
-The first candidate targets **macOS on Apple Silicon**, **English Codex UI**, **Stream Deck 7.1 or later**, and Stream Deck+ or a **15-button Mobile layout**. Mobile may require an Elgato entitlement for that layout. The actual tested-version matrix and outstanding checks are in [VERIFICATION.md](docs/VERIFICATION.md).
-
-This setup reads local Codex state and uses macOS Accessibility for visible app controls. Codex UI or database changes can require updates. Unknown, stale, ambiguous, and locked-screen states must fail closed. The installer and prebuilt helpers are experimental builds, not Apple Developer ID notarized applications. Use only the normal macOS approval process; inability to install that way is a release blocker.
-
-## Privacy in everyday use
-
-Task and project titles appear on the physical deck and on Mobile. Treat those screens like your Codex window when sharing a desk, presenting, or taking screenshots. The public demo and photos use fictional tasks to illustrate the experiment.
-
-Streamdex reads local task state and controls the app on your Mac. This does not make Codex’s AI processing offline or change its account, retention, permission, or organization settings. Use it only where those settings and the required Accessibility access are appropriate. Voice mic and speaker buttons affect the Codex Voice session, not meeting apps or the Mac’s microphone permissions. See [data handling and privacy](docs/PRIVACY.md).
+Task and project titles appear on your deck or phone, so check what's visible before sharing photos or recordings. Streamdex reads local Codex state and uses macOS Accessibility to operate its controls. Codex's usual account and data settings still apply, including for Voice. The [privacy guide](docs/PRIVACY.md) explains the details.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for branches, pull requests, local checks, and privacy requirements. Changes go through a pull request with the **Build and test** check on GitHub Actions. This remains an experiment with no review, support, or maintenance commitment.
+The [contribution guide](CONTRIBUTING.md) covers local checks, branches, and pull requests. PRs run the build and tests on GitHub Actions.
 
 ## Source and credit
 
-Streamdex is an experiment by **Daniel Sack ([@danielsack](https://github.com/danielsack))** and is based on **Todd Dailey’s [streamdeckcodex](https://github.com/twidtwid/streamdeckcodex)**. The upstream task tracking, command bridge, and native targeting work form its foundation. Streamdex adds the task-card design, Mobile/Plus layouts, Voice controls, persistent read state, lighting presets, setup kit, and demo.
+Streamdex is a personal experiment by **Daniel Sack ([@danielsack](https://github.com/danielsack))**, built on **Todd Dailey's [streamdeckcodex](https://github.com/twidtwid/streamdeckcodex)**. Todd's task tracking, command bridge, and native targeting form the foundation. Streamdex adds the task-card design, Mobile/Plus layouts, Voice controls, persistent read state, lighting presets, setup kit, and demo.
 
-[MIT license](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Source and build guide](docs/BUILD.md) · [Privacy review](docs/PRIVACY.md)
-
-This is a personal, independent experiment, provided as is under the MIT license. It does not represent an employer and is not an official OpenAI or Elgato product. No organizational endorsement is implied.
+[MIT license](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Build guide](docs/BUILD.md)
