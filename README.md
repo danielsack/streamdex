@@ -4,9 +4,16 @@ An experiment in ways of working with agentic workflows, using Stream Deck+ and 
 
 Shared as an experimental snapshot. No support is provided, and there is no commitment to ongoing maintenance, updates, or compatibility fixes.
 
-[![Watch the Streamdex walkthrough: a simulated Codex conversation beside a 3D Stream Deck+](docs/assets/hero-poster.jpg)](docs/assets/streamdex-hero.mp4)
+<a href="docs/assets/streamdex-hero.mp4">
+  <picture>
+    <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/hero-poster.jpg">
+    <img src="docs/assets/hero-preview.gif" alt="A fictional Codex conversation beside a moving 3D Stream Deck+: select a task to bring its question into view. Open the full walkthrough." width="800" height="450">
+  </picture>
+</a>
 
-**[▶ Watch the 37-second walkthrough](docs/assets/streamdex-hero.mp4)** · **[Try the interactive demo locally](#try-it-without-hardware)** · [Setup](#set-up-with-your-local-agent)
+*Five-second preview plays once. [Static preview](docs/assets/hero-poster.jpg).*
+
+**[▶ Watch the full walkthrough (37 seconds, 1.4 MB)](docs/assets/streamdex-hero.mp4)** · **[Try the interactive demo locally](#try-it-without-hardware)** · [Setup](#set-up-with-your-local-agent)
 
 The film uses fictional conversations and simulated interactions. Dictated replies are reviewed and sent in Codex. The hardware does not automatically answer questions or approve work.
 
@@ -49,7 +56,7 @@ A configured light going offline keeps its assignment. Reasoning previews expire
 
 Open **[docs/demo/index.html](docs/demo/index.html)** from a downloaded copy in your browser. Select tasks, open a question, mark a response seen, toggle Voice audio, and try the dial presets. The page includes keyboard-accessible controls, reduced motion, pause/reset, and a fallback when WebGL is unavailable. It uses no accounts, microphones, live tasks, analytics, or external libraries loaded over the network.
 
-GitHub cannot execute this demo inside a README. The planned public demo address is `https://danielsack.github.io/streamdex/demo/`, which will only be enabled after publication review. Until then, run the local file or a local static server.
+GitHub READMEs do not run JavaScript or embed live pages. The animations above are previews; the interactive demo runs on a separate page. The planned public demo address is `https://danielsack.github.io/streamdex/demo/`, which will only be enabled after publication review. Until then, run the local file or a local static server.
 
 ## Set up with your local agent
 
