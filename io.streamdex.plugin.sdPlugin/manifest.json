@@ -1,0 +1,112 @@
+{
+  "$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
+  "Actions": [
+    {
+      "Controllers": [
+        "Keypad"
+      ],
+      "Icon": "imgs/actions/agent",
+      "Name": "Task status",
+      "States": [
+        {
+          "Image": "imgs/actions/agent",
+          "ShowTitle": false,
+          "TitleAlignment": "bottom"
+        }
+      ],
+      "Tooltip": "Follow a recent Codex chat and display its live status.",
+      "UUID": "io.streamdex.plugin.agent-status"
+    },
+    {
+      "Controllers": [
+        "Keypad",
+        "Encoder"
+      ],
+      "Encoder": {
+        "Icon": "imgs/actions/command",
+        "layout": "layouts/command.json",
+        "TriggerDescription": {
+          "Push": "Run the displayed Codex action",
+          "Rotate": "Choose a Codex action"
+        }
+      },
+      "Icon": "imgs/actions/command",
+      "Name": "Task command",
+      "States": [
+        {
+          "Image": "imgs/actions/command",
+          "ShowTitle": false,
+          "TitleAlignment": "bottom"
+        }
+      ],
+      "Tooltip": "Toggle FAST or Plan, compact the task, or open Review, Browser, Files, and Side chat.",
+      "UUID": "io.streamdex.plugin.command"
+    },
+    {
+      "UUID": "io.streamdex.plugin.workdesk",
+      "Name": "Streamdex controls",
+      "Controllers": [
+        "Encoder",
+        "Keypad"
+      ],
+      "Icon": "imgs/actions/command",
+      "Encoder": {
+        "layout": "$A0",
+        "TriggerDescription": {
+          "Rotate": "Adjust light brightness, temperature, or volume",
+          "Push": "Toggle assigned light or mute volume",
+          "Touch": "Run the labelled task control",
+          "LongTouch": "Hold ACCEPT to approve the visible request"
+        }
+      },
+      "States": [
+        {
+          "Image": "imgs/actions/command",
+          "ShowTitle": false
+        }
+      ]
+    }
+  ],
+  "ApplicationsToMonitor": {
+    "mac": [
+      "com.openai.codex"
+    ]
+  },
+  "Author": "Streamdex",
+  "Category": "Streamdex",
+  "CategoryIcon": "imgs/category",
+  "CodePath": "bin/plugin.js",
+  "Description": "Experimental task, Voice and dial controls for agentic workflows in Codex.",
+  "Icon": "imgs/plugin",
+  "Name": "Streamdex",
+  "Nodejs": {
+    "Version": "24"
+  },
+  "OS": [
+    {
+      "Platform": "mac",
+      "MinimumVersion": "13"
+    }
+  ],
+  "Profiles": [
+    {
+      "Name": "streamdex-plus",
+      "DeviceType": 7,
+      "AutoInstall": true,
+      "DontAutoSwitchWhenInstalled": true
+    },
+    {
+      "Name": "streamdex-mobile",
+      "DeviceType": 3,
+      "AutoInstall": true,
+      "DontAutoSwitchWhenInstalled": true
+    }
+  ],
+  "SDKVersion": 3,
+  "Software": {
+    "MinimumVersion": "7.1"
+  },
+  "URL": "https://github.com/danielsack/streamdex",
+  "UUID": "io.streamdex.plugin",
+  "Version": "0.1.0.1"
+}

@@ -1,0 +1,353 @@
+{
+  "Controllers": [
+    {
+      "Type": "Keypad",
+      "Actions": {
+        "0,0": {
+          "ActionID": "8ab56f11-72f9-5943-a771-5297f46f03b6",
+          "LinkedTitle": false,
+          "Name": "Task 1",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "slot": 1
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.agent-status"
+        },
+        "1,0": {
+          "ActionID": "21ed58e3-7e0c-5d6e-abf3-785f29e0d80d",
+          "LinkedTitle": false,
+          "Name": "Task 2",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "slot": 2
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.agent-status"
+        },
+        "2,0": {
+          "ActionID": "addf8569-1d08-52d6-a32a-4c5f2cc7a777",
+          "LinkedTitle": false,
+          "Name": "Task 3",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "slot": 3
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.agent-status"
+        },
+        "3,0": {
+          "ActionID": "e8b4e540-1d59-51e9-abc0-a4e27c35a4cc",
+          "LinkedTitle": false,
+          "Name": "Task 4",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "slot": 4
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.agent-status"
+        },
+        "0,1": {
+          "ActionID": "d02e4fb4-09e4-52d0-aab2-4fcd06fe64b3",
+          "LinkedTitle": false,
+          "Name": "Task 5",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "slot": 5
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.agent-status"
+        },
+        "1,1": {
+          "ActionID": "ab3c805b-8a49-5cc5-a1f6-bbd02057c77b",
+          "LinkedTitle": false,
+          "Name": "Task 6",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "slot": 6
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.agent-status"
+        },
+        "2,1": {
+          "ActionID": "99f88d78-31e7-583d-a911-84a9d02ba8db",
+          "LinkedTitle": false,
+          "Name": "Task 7",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "slot": 7
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.agent-status"
+        },
+        "3,1": {
+          "ActionID": "3e002630-1659-5dd1-a046-ae868b7cb9e9",
+          "LinkedTitle": false,
+          "Name": "Task 8",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "slot": 8
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.agent-status"
+        },
+        "4,0": {
+          "ActionID": "16707ebe-1157-58f3-a927-d094dbcd708a",
+          "LinkedTitle": false,
+          "Name": "Voice",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "voice"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "4,1": {
+          "ActionID": "e4fa6274-d54d-5625-a9cb-78a81e1b3a26",
+          "LinkedTitle": false,
+          "Name": "Hold to dictate",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "dictate"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "0,2": {
+          "ActionID": "5f9c8f69-6298-56e5-a615-221275f7f0b0",
+          "LinkedTitle": false,
+          "Name": "Context left",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelRole": "left"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "1,2": {
+          "ActionID": "8f9bacc1-2af5-59c3-ab04-a9a0d48fc8b8",
+          "LinkedTitle": false,
+          "Name": "Context right",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelRole": "right"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "2,2": {
+          "ActionID": "46b85daa-02d8-565f-a3cc-d6ce2cd91ce9",
+          "LinkedTitle": false,
+          "Name": "Quick chat / Voice mic",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelVoiceControl": "mic"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "3,2": {
+          "ActionID": "6791b195-18a7-5633-ad03-0809d6a1a179",
+          "LinkedTitle": false,
+          "Name": "New task / Voice sound",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelVoiceControl": "sound"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "4,2": {
+          "ActionID": "8ed6ad19-0037-5de9-aeca-a6153a107ffe",
+          "LinkedTitle": false,
+          "Name": "More",
+          "Plugin": {
+            "Name": "Navigation",
+            "UUID": "com.elgato.streamdeck.profile.openchild",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {
+            "ProfileUUID": "35bc2279-561b-52d8-a311-10a1ad60157d"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/navigation.svg",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.openchild"
+        }
+      }
+    }
+  ],
+  "Name": "Tasks",
+  "Icon": ""
+}

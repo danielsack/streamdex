@@ -1,0 +1,19 @@
+{
+  "Device": {
+    "Model": "20GBD9901",
+    "UUID": ""
+  },
+  "InstalledByPluginUUID": "io.streamdex.plugin",
+  "Name": "Streamdex+",
+  "Pages": {
+    "Current": "070748b0-7872-50c8-a772-51263dae9c82",
+    "Default": "43396e8e-c0f3-594d-a7c8-c2a84bb1e2cc",
+    "Pages": [
+      "070748b0-7872-50c8-a772-51263dae9c82",
+      "ee53235f-2674-5448-a2ea-bd0c94d61cd5"
+    ]
+  },
+  "PreconfiguredName": "streamdex-plus",
+  "ReadOnly": false,
+  "Version": "3.0"
+}

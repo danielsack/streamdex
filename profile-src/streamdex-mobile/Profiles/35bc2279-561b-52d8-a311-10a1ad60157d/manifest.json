@@ -1,0 +1,238 @@
+{
+  "Controllers": [
+    {
+      "Type": "Keypad",
+      "Actions": {
+        "0,0": {
+          "ActionID": "16707ebe-1157-58f3-a927-d094dbcd708a",
+          "LinkedTitle": false,
+          "Name": "Voice",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "voice"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "1,0": {
+          "ActionID": "e4fa6274-d54d-5625-a9cb-78a81e1b3a26",
+          "LinkedTitle": false,
+          "Name": "Hold to dictate",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "dictate"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "2,0": {
+          "ActionID": "8812de7a-0031-5344-a274-9948dc1b6666",
+          "LinkedTitle": false,
+          "Name": "Fast",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "fast"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "3,0": {
+          "ActionID": "e296c880-e0d1-5733-afad-07eb4c496960",
+          "LinkedTitle": false,
+          "Name": "Plan",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "plan"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "0,1": {
+          "ActionID": "112d4063-9c3c-5a31-a5c8-73a7d6fcd6bd",
+          "LinkedTitle": false,
+          "Name": "Quick chat",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "quick-chat"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "1,1": {
+          "ActionID": "2168d21d-e860-5f65-ad04-69b589ba68b9",
+          "LinkedTitle": false,
+          "Name": "New task",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "new-chat"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "2,1": {
+          "ActionID": "f2969206-aba1-5af2-acc1-d3c5b9fcfd67",
+          "LinkedTitle": false,
+          "Name": "Volume down",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "volume-down"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "3,1": {
+          "ActionID": "c655919e-e0f5-5ba9-adb6-8bd0767d9dde",
+          "LinkedTitle": false,
+          "Name": "Volume up",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "volume-up"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "4,1": {
+          "ActionID": "f617faf4-edb1-52ce-afcd-8e9d9a2829a8",
+          "LinkedTitle": false,
+          "Name": "Mute system sound",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "mute"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "4,2": {
+          "ActionID": "b8176003-c679-5b1e-ac87-e8d50cf22113",
+          "LinkedTitle": false,
+          "Name": "Tasks",
+          "Plugin": {
+            "Name": "Navigation",
+            "UUID": "com.elgato.streamdeck.profile.backtoparent",
+            "Version": "1.0"
+          },
+          "Resources": null,
+          "Settings": {},
+          "State": 0,
+          "States": [
+            {
+              "Image": "Images/navigation.svg",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "com.elgato.streamdeck.profile.backtoparent"
+        }
+      }
+    }
+  ],
+  "Name": "More",
+  "Icon": ""
+}

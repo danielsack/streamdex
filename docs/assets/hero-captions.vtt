@@ -1,0 +1,25 @@
+WEBVTT
+
+00:00.000 --> 00:03.200
+Eight fictional tasks. Motion signals activity; color signals status.
+
+00:03.200 --> 00:06.400
+An amber task needs context. Select it to open the question in Codex.
+
+00:06.400 --> 00:15.400
+Dictate a reply, then review the draft in the app. No real microphone is used in this illustration.
+
+00:15.400 --> 00:19.000
+Send the answer in Codex. The task resumes and shows RUN.
+
+00:19.000 --> 00:24.300
+Open a completed response. READY becomes SEEN, which does not mean reviewed or approved.
+
+00:24.300 --> 00:29.800
+Open another question, choose a format in Codex, and send the answer.
+
+00:29.800 --> 00:32.800
+Select a completed task to open its response.
+
+00:32.800 --> 00:36.800
+Streamdex. Try the interactive demo or get the setup kit from github.com/danielsack/streamdex.

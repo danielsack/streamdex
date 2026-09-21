@@ -1,0 +1,518 @@
+* {
+  box-sizing: border-box;
+}
+html {
+  background: #101113;
+  color: #f3f3ee;
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+body {
+  margin: 0;
+}
+a {
+  color: inherit;
+  text-underline-offset: 4px;
+}
+button,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  color: inherit;
+  background: #222429;
+  border: 1px solid #3c3f46;
+  border-radius: 9px;
+  padding: 10px 14px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+button:hover {
+  background: #30343a;
+  border-color: #858a93;
+}
+button:focus-visible,
+select:focus-visible,
+a:focus-visible {
+  outline: 3px solid #8bc9f4;
+  outline-offset: 4px;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.site-header,
+footer {
+  max-width: 1280px;
+  margin: auto;
+  padding: 27px 32px;
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  font-size: 13px;
+  color: #adb0b7;
+}
+.site-header > a:last-child {
+  margin-left: auto;
+}
+.wordmark {
+  font-size: 23px;
+  font-weight: 700;
+  letter-spacing: -0.7px;
+  text-decoration: none;
+  color: #f3f3ee;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.mark {
+  font-size: 31px;
+  color: #69e4a6;
+}
+.badge {
+  font-size: 10px;
+  letter-spacing: 1.5px;
+  border: 1px solid #40434a;
+  border-radius: 30px;
+  padding: 7px 10px;
+}
+main {
+  max-width: 1216px;
+  margin: auto;
+  padding: 12px 24px 56px;
+}
+.intro {
+  padding: 24px 0 26px;
+}
+.eyebrow {
+  color: #b0b3bc;
+  letter-spacing: 2px;
+  font-size: 10px;
+  font-weight: 650;
+  line-height: 1.7;
+  margin: 0 0 12px;
+}
+h1 {
+  font-size: clamp(36px, 5.2vw, 65px);
+  letter-spacing: -2.8px;
+  line-height: 1.1;
+  margin: 0 0 16px;
+  font-weight: 550;
+}
+.intro > p:last-child {
+  color: #b5b7bd;
+  font-size: 17px;
+  line-height: 1.6;
+}
+h2 {
+  font-size: 24px;
+  letter-spacing: -0.6px;
+  font-weight: 550;
+  margin: 5px 0 12px;
+}
+.experience {
+  display: grid;
+  grid-template-columns: minmax(0, 1.8fr) minmax(295px, 1fr);
+  border: 1px solid #34363c;
+  border-radius: 20px;
+  overflow: hidden;
+  background: #191b1f;
+}
+.device-panel {
+  position: relative;
+  min-width: 0;
+  background: radial-gradient(
+    ellipse at 45% 40%,
+    #343a3e 0,
+    #24292d 36%,
+    #1a1d21 75%
+  );
+}
+.model-stage {
+  height: 570px;
+  touch-action: none;
+}
+.model-stage canvas {
+  display: block;
+  max-width: 100%;
+}
+.view-controls {
+  position: absolute;
+  z-index: 2;
+  display: flex;
+  gap: 7px;
+  top: 18px;
+  left: 18px;
+  right: 18px;
+}
+.view-controls button {
+  font-size: 11px;
+  background: #16181cbf;
+  backdrop-filter: blur(8px);
+  padding: 9px 11px;
+}
+.view-controls button:last-child {
+  margin-left: auto;
+}
+.model-help {
+  position: absolute;
+  bottom: 12px;
+  left: 20px;
+  right: 20px;
+  text-align: center;
+  color: #a7aeb5;
+  font-size: 11px;
+}
+#webgl-fallback {
+  position: absolute;
+  top: 40%;
+  left: 10%;
+  right: 10%;
+  line-height: 1.7;
+  text-align: center;
+}
+aside {
+  padding: 28px;
+  border-left: 1px solid #34363c;
+}
+.scenarios {
+  display: grid;
+  gap: 8px;
+}
+.scenarios button {
+  text-align: left;
+  display: flex;
+  gap: 12px;
+  background: transparent;
+  padding: 12px;
+}
+.scenarios button[aria-pressed="true"] {
+  background: #282c31;
+  border-color: #737b85;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  margin-top: 5px;
+}
+.amber {
+  background: #f1c56d;
+}
+.green {
+  background: #69e4a6;
+}
+.blue {
+  background: #58bfff;
+}
+.red {
+  background: #f47f8c;
+}
+small {
+  display: block;
+  color: #a9adb5;
+  font-size: 11px;
+  line-height: 1.55;
+  margin-top: 4px;
+}
+.task-detail {
+  margin-top: 24px;
+}
+.status {
+  font-size: 11px;
+  letter-spacing: 1px;
+  font-weight: 700;
+  color: #f1c56d;
+}
+.task-detail h2 {
+  font-size: 23px;
+}
+.task-detail p,
+.app-card p {
+  font-size: 12px;
+  line-height: 1.65;
+  color: #b5bac2;
+}
+.app-card {
+  border-top: 1px solid #3a3e45;
+  padding-top: 16px;
+  margin-top: 18px;
+}
+.app-card button {
+  font-size: 12px;
+}
+.controls {
+  margin-top: 42px;
+}
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.section-heading button {
+  font-size: 12px;
+}
+.keys {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 10px;
+}
+.task-key {
+  aspect-ratio: 1;
+  padding: 10px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  min-width: 0;
+  text-align: left;
+  border: 2px solid var(--status, #929292);
+  background: #191b1f;
+}
+.task-key[aria-pressed="true"] {
+  outline: 2px solid #f3f3ee;
+  outline-offset: 3px;
+}
+.task-key .key-head {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--status);
+}
+.task-key b {
+  font-size: clamp(11px, 1.2vw, 16px);
+  line-height: 1.2;
+  text-align: center;
+}
+.task-key small {
+  text-align: center;
+  font-size: 10px;
+}
+.task-key[data-state="ERROR"] {
+  background: #301f25;
+}
+.touch {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin-top: 20px;
+  border: 1px solid #3c4149;
+  border-radius: 12px;
+  background: #111317;
+  overflow: hidden;
+}
+.segment {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-right: 1px solid #3c4149;
+  gap: 6px;
+  padding: 8px;
+}
+.segment:last-child {
+  border: 0;
+}
+.segment button {
+  font-size: 11px;
+  padding: 12px 4px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--ink, #f3f3ee);
+}
+.dial-options {
+  display: flex;
+  gap: 25px;
+  align-items: center;
+  margin: 24px 0 14px;
+  color: #c5c8ce;
+  font-size: 12px;
+  flex-wrap: wrap;
+}
+select {
+  margin-left: 8px;
+  background: #222429;
+  color: #f3f3ee;
+  padding: 7px;
+  border: 1px solid #5a5e67;
+  border-radius: 7px;
+}
+.dials {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+.dial {
+  background: #1c1f23;
+  padding: 13px;
+  border-radius: 12px;
+}
+.dial p {
+  text-align: center;
+  font-size: 12px;
+  color: #bcc3cd;
+  margin: 0 0 12px;
+  min-height: 28px;
+}
+.dial > div {
+  display: flex;
+  justify-content: center;
+  gap: 5px;
+}
+.dial button {
+  padding: 7px 11px;
+  font-size: 12px;
+}
+.announcement {
+  min-height: 42px;
+  color: #a9b4c2;
+  font-size: 13px;
+  padding: 16px 0;
+  line-height: 1.6;
+}
+.film {
+  display: grid;
+  grid-template-columns: 1fr 1.9fr;
+  align-items: center;
+  gap: 40px;
+  margin: 40px 0;
+  border-top: 1px solid #34363c;
+  padding-top: 42px;
+}
+.film p {
+  color: #a9adb5;
+  font-size: 14px;
+  line-height: 1.7;
+}
+.film video {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #454950;
+}
+.fine-print {
+  font-size: 12px;
+  color: #9197a2;
+  max-width: 790px;
+  line-height: 1.7;
+  margin-top: 40px;
+}
+footer {
+  border-top: 1px solid #34363c;
+  justify-content: space-between;
+  font-size: 11px;
+  padding-top: 24px;
+  padding-bottom: 30px;
+}
+@media (max-width: 850px) {
+  .experience {
+    grid-template-columns: 1fr;
+  }
+  .model-stage {
+    height: 450px;
+  }
+  aside {
+    border-left: 0;
+    border-top: 1px solid #34363c;
+  }
+  .scenarios {
+    grid-template-columns: 1fr 1fr;
+  }
+  .keys {
+    grid-template-columns: repeat(4, 1fr);
+  }
+  .touch {
+    grid-template-columns: 1fr 1fr;
+  }
+  .segment:nth-child(2) {
+    border-right: 0;
+  }
+  .film {
+    grid-template-columns: 1fr;
+    gap: 15px;
+  }
+  .dials {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 470px) {
+  main {
+    padding: 4px 14px 32px;
+  }
+  .site-header {
+    padding: 20px 16px;
+    gap: 9px;
+  }
+  .badge {
+    font-size: 8px;
+    padding: 6px;
+  }
+  .site-header > a:last-child {
+    font-size: 11px;
+  }
+  .wordmark {
+    font-size: 20px;
+  }
+  h1 {
+    letter-spacing: -1.7px;
+  }
+  .model-stage {
+    height: 385px;
+  }
+  .view-controls {
+    left: 10px;
+    right: 10px;
+    gap: 4px;
+  }
+  .view-controls button {
+    font-size: 10px;
+    padding: 8px;
+  }
+  .scenarios {
+    grid-template-columns: 1fr;
+  }
+  aside {
+    padding: 20px;
+  }
+  .keys {
+    gap: 8px;
+  }
+  .task-key b {
+    font-size: 13px;
+  }
+  .task-key .key-head {
+    font-size: 9px;
+  }
+  .task-key small {
+    font-size: 9px;
+  }
+  .task-key {
+    padding: 8px 5px;
+  }
+  .segment button {
+    font-size: 10px;
+  }
+  .dial button {
+    padding: 8px;
+  }
+  .dial-options {
+    gap: 12px;
+  }
+  footer {
+    display: block;
+    line-height: 1.8;
+    padding: 20px;
+  }
+  footer a {
+    display: block;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+  }
+}

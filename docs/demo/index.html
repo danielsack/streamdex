@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="color-scheme" content="dark" />
+    <meta
+      name="description"
+      content="Try a local, fictional Streamdex setup for Stream Deck+ and Mobile."
+    />
+    <title>Streamdex • Try the controls</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="demo.css" />
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="wordmark" href="../index.html"
+        ><span class="mark" aria-hidden="true">▤</span> streamdex</a
+      ><span class="badge">EXPERIMENTAL</span
+      ><a href="https://github.com/danielsack/streamdex">Source ↗</a>
+    </header>
+    <main>
+      <div class="intro">
+        <p class="eyebrow">A LITTLE LESS WINDOW SWITCHING</p>
+        <h1>Keep the work in view.</h1>
+        <p>
+          A personal experiment in ways of working with agentic workflows.
+          Eight tasks. Controls that follow the conversation.
+        </p>
+      </div>
+      <section
+        id="streamdeck-experiment"
+        class="experience"
+        aria-label="Interactive Stream Deck demonstration"
+      >
+        <div class="device-panel">
+          <div class="view-controls">
+            <button data-view="desk">Desk view</button
+            ><button data-view="front">Front view</button
+            ><button id="motion" aria-pressed="false">Pause motion</button>
+          </div>
+          <div class="model-stage"></div>
+          <p class="model-help">
+            Drag to turn · Select a key · Click a dial to press it
+          </p>
+          <p id="webgl-fallback" hidden>
+            The 3D view is unavailable. All demo controls work below.
+          </p>
+        </div>
+        <aside>
+          <p class="eyebrow">TRY A SCENARIO</p>
+          <div class="scenarios">
+            <button data-scenario="input">
+              <span class="dot amber"></span
+              ><span
+                >Something needs you<small
+                  >Open the question, then respond in the app.</small
+                ></span
+              ></button
+            ><button data-scenario="ready">
+              <span class="dot green"></span
+              ><span
+                >A response is ready<small
+                  >Open it. READY becomes SEEN.</small
+                ></span
+              ></button
+            ><button data-scenario="voice">
+              <span class="dot blue"></span
+              ><span
+                >Talk it through<small
+                  >Mute your mic and agent audio independently.</small
+                ></span
+              ></button
+            ><button data-scenario="error">
+              <span class="dot red"></span
+              ><span
+                >A task hit a problem<small
+                  >Open the task to inspect the error.</small
+                ></span
+              >
+            </button>
+          </div>
+          <div class="task-detail">
+            <span id="selected-status" class="status">INPUT</span>
+            <h2 id="selected-title">Confirm scope</h2>
+            <p id="selected-description">
+              Select any task on the device or below.
+            </p>
+          </div>
+          <div id="app-card" class="app-card">
+            <span class="eyebrow">SIMULATED CODEX VIEW</span>
+            <p id="app-message">
+              No app is connected. All tasks and interactions are fictional.
+            </p>
+            <button id="respond" hidden>Answer in simulated app</button>
+          </div>
+        </aside>
+      </section>
+      <section
+        class="controls"
+        aria-label="Keyboard-accessible demonstration controls"
+      >
+        <div class="section-heading">
+          <div>
+            <p class="eyebrow">THE SAME CONTROLS, WITH LABELS</p>
+            <h2 id="page-title">Tasks</h2>
+          </div>
+          <button id="reset">Reset demo</button>
+        </div>
+        <div id="keys" class="keys"></div>
+        <div id="touch" class="touch"></div>
+        <div class="dial-options">
+          <label
+            >Dial preset
+            <select id="lighting">
+              <option value="0">No lights (reasoning dial)</option>
+              <option value="1">One Elgato light</option>
+              <option value="2">Two Elgato lights</option>
+            </select></label
+          ><label
+            ><input type="checkbox" id="offline" /> Simulate lights
+            offline</label
+          >
+        </div>
+        <div id="dials" class="dials"></div>
+        <p
+          id="announcement"
+          class="announcement"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          Demo ready. No changes are made to your apps or hardware.
+        </p>
+      </section>
+      <section class="film">
+        <div>
+          <p class="eyebrow">SEE THE FLOW</p>
+          <h2>From a signal to a conversation.</h2>
+          <p>
+            An illustrated walkthrough of tasks moving between the deck and
+            Codex. Some actions happen in the app.
+          </p>
+        </div>
+        <video
+          controls
+          playsinline
+          preload="metadata"
+          poster="../assets/hero-poster.jpg"
+        >
+          <source src="../assets/streamdex-hero.mp4" type="video/mp4" />
+          <track
+            default
+            kind="captions"
+            srclang="en"
+            label="English"
+            src="../assets/hero-captions.vtt"
+          />
+          Your browser does not support video.
+          <a href="../assets/streamdex-hero.mp4">Download the film</a>.
+        </video>
+      </section>
+      <p class="fine-print">
+        This is an interactive illustration, not a live Codex session. Status
+        animation is a signal, not progress or microphone amplitude. SEEN means
+        opened, not reviewed or approved.
+      </p>
+    </main>
+    <footer>
+      <span
+        >Streamdex experiment · MIT · Built on Todd Dailey’s
+        streamdeckcodex</span
+      ><a href="https://github.com/danielsack/streamdex">Setup and source ↗</a>
+    </footer>
+    <script src="demo.js"></script>
+    <script src="vendor/three.min.js"></script>
+    <script src="model.js"></script>
+  </body>
+</html>

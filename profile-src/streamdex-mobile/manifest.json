@@ -1,0 +1,18 @@
+{
+  "Device": {
+    "Model": "20GAI9901",
+    "UUID": ""
+  },
+  "InstalledByPluginUUID": "io.streamdex.plugin",
+  "Name": "Streamdex Mobile",
+  "Pages": {
+    "Current": "7808188a-2958-50b2-a793-8e3ee175f5d0",
+    "Default": "c02d2d45-cc02-53a7-a29f-ed2822ec9e93",
+    "Pages": [
+      "7808188a-2958-50b2-a793-8e3ee175f5d0"
+    ]
+  },
+  "PreconfiguredName": "streamdex-mobile",
+  "ReadOnly": false,
+  "Version": "3.0"
+}

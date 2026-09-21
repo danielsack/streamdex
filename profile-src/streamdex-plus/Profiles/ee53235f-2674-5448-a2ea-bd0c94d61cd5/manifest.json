@@ -1,0 +1,308 @@
+{
+  "Controllers": [
+    {
+      "Type": "Keypad",
+      "Actions": {
+        "0,0": {
+          "ActionID": "16707ebe-1157-58f3-a927-d094dbcd708a",
+          "LinkedTitle": false,
+          "Name": "Voice",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "voice"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "1,0": {
+          "ActionID": "e4fa6274-d54d-5625-a9cb-78a81e1b3a26",
+          "LinkedTitle": false,
+          "Name": "Hold to dictate",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "dictate"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "2,0": {
+          "ActionID": "8812de7a-0031-5344-a274-9948dc1b6666",
+          "LinkedTitle": false,
+          "Name": "Fast",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "fast"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "3,0": {
+          "ActionID": "e296c880-e0d1-5733-afad-07eb4c496960",
+          "LinkedTitle": false,
+          "Name": "Plan",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelPilot": true,
+            "travelUtility": "plan"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "0,1": {
+          "ActionID": "112d4063-9c3c-5a31-a5c8-73a7d6fcd6bd",
+          "LinkedTitle": false,
+          "Name": "Quick chat",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "quick-chat"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "1,1": {
+          "ActionID": "2168d21d-e860-5f65-ad04-69b589ba68b9",
+          "LinkedTitle": false,
+          "Name": "New task",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "new-chat"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "2,1": {
+          "ActionID": "f2969206-aba1-5af2-acc1-d3c5b9fcfd67",
+          "LinkedTitle": false,
+          "Name": "Volume down",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "volume-down"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        },
+        "3,1": {
+          "ActionID": "c655919e-e0f5-5ba9-adb6-8bd0767d9dde",
+          "LinkedTitle": false,
+          "Name": "Volume up",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "travelMore": true,
+            "mobileCommand": "volume-up"
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk"
+        }
+      }
+    },
+    {
+      "Type": "Encoder",
+      "Actions": {
+        "0,0": {
+          "ActionID": "5e56d72a-e039-58cd-ae52-811765bf3edd",
+          "LinkedTitle": false,
+          "Name": "Dial 1",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "plusV2": true,
+            "plusPage": "more",
+            "column": 0
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk",
+          "Encoder": {
+            "layout": "$A0"
+          }
+        },
+        "1,0": {
+          "ActionID": "6158bfb6-1378-5602-af2b-62fcb20796b7",
+          "LinkedTitle": false,
+          "Name": "Dial 2",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "plusV2": true,
+            "plusPage": "more",
+            "column": 1
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk",
+          "Encoder": {
+            "layout": "$A0"
+          }
+        },
+        "2,0": {
+          "ActionID": "eac1b231-7b8b-508c-a1bd-f514d81ce3e5",
+          "LinkedTitle": false,
+          "Name": "Dial 3",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "plusV2": true,
+            "plusPage": "more",
+            "column": 2
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk",
+          "Encoder": {
+            "layout": "$A0"
+          }
+        },
+        "3,0": {
+          "ActionID": "7ed8de18-4ef8-5e96-aa20-03f83c6c5fb5",
+          "LinkedTitle": false,
+          "Name": "Dial 4",
+          "Plugin": {
+            "Name": "Streamdex",
+            "UUID": "io.streamdex.plugin",
+            "Version": "0.1.0.1"
+          },
+          "Resources": null,
+          "Settings": {
+            "plusV2": true,
+            "plusPage": "more",
+            "column": 3
+          },
+          "State": 0,
+          "States": [
+            {
+              "Image": "",
+              "ShowTitle": false
+            }
+          ],
+          "UUID": "io.streamdex.plugin.workdesk",
+          "Encoder": {
+            "layout": "$A0"
+          }
+        }
+      }
+    }
+  ],
+  "Name": "More",
+  "Icon": ""
+}
