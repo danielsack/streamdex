@@ -2,7 +2,7 @@
 
 Avoid em dashes. Keep instructions clear for people who are not developers.
 
-Present Streamdex as a personal experiment in ways of working with agentic workflows. Do not offer support, invite support requests, imply active or promised maintenance, or introduce professional-engagement claims. Preserve attribution and describe technical capabilities without making service commitments.
+Present Streamdex as a personal experiment in ways of working with agentic workflows. Do not offer support, invite support requests, imply active or promised maintenance, or introduce professional-engagement claims. Preserve attribution and describe technical capabilities without making service commitments. Keep the README conversational and focused on the experiment and what people can use now. Avoid repeated support/maintenance disclaimers, obvious demo caveats, unpublished URLs, roadmap promises, and internal staging or publication-review language. Keep detailed installation and privacy requirements in their linked guides.
 
 ## Installation boundary
 
