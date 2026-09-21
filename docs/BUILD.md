@@ -35,6 +35,12 @@ This writes SVG frames and a duration manifest under .build/readme-frames. Raste
 
 The procedural Three.js model and accessible controls run without a server or remote dependencies. For local review, serve only docs on loopback or open docs/demo/index.html. The model is an illustration, not hardware CAD and not a live Codex connector.
 
-## Publication boundary
+## GitHub checks and demo hosting
 
-GitHub Actions runs the reviewed CI workflow on pull requests and pushes to main, with manual runs available. It checks source and committed payload integrity before rebuilding on an isolated macOS Apple Silicon runner. The token has read-only permissions, fork runs require approval, and no artifacts are uploaded. Review the CI results before merging. CI success does not approve a release or establish hardware compatibility. Media uploads, release publication and Pages deployment still require separate approval of the exact audited candidate. Pages would serve docs, with the demo at /demo/.
+GitHub Actions runs Build and test on pull requests and pushes to main, with manual checks available. It verifies committed source and payload integrity before rebuilding on an isolated macOS Apple Silicon runner. That job has read-only access and uploads no artifacts. Fork workflows require approval.
+
+After Build and test succeeds on a push to main, Publish demo exports only tracked files from docs/index.html, docs/demo, and docs/assets, plus LICENSE. It uploads that static site with a one-day artifact retention and deploys through the main-only github-pages environment. GitHub-owned actions are pinned to commit IDs. Pull requests and manual check runs never deploy.
+
+The [interactive demo](https://danielsack.github.io/streamdex/demo/) is hosted on GitHub Pages. To update it, use the normal pull-request workflow. The site has no backend, account access, microphone access, analytics, or CDN dependencies. Plugin binaries, installer packages and local state are not included in the website.
+
+Publishing the browser demo does not establish hardware compatibility or publish an installable release. Those checks remain in [VERIFICATION.md](VERIFICATION.md).

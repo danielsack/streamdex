@@ -1,12 +1,12 @@
 # Local candidate audit
 
-**Candidate:** v0.1.0-beta.1 (plugin version 0.1.0.1). **Release publication status: not approved; live acceptance pending.** This report covers the local release tree and proposed setup kit. The initial source snapshot was subsequently pushed with explicit owner approval. Release publication and Pages deployment remain pending. The existing Stream Deck installation and its backups were preserved.
+**Candidate:** v0.1.0-beta.1 (plugin version 0.1.0.1). **Release publication status: not approved; live acceptance pending.** This report covers the local release tree and proposed setup kit. The initial source snapshot was subsequently pushed with explicit owner approval. Installable-release publication remains pending; browser-demo hosting is separate from hardware acceptance. The existing Stream Deck installation and its backups were preserved.
 
 ## Candidate boundary
 
 The candidate has fresh Git history and an explicit 193-file allowlist in [release-files.json](release-files.json). The repository and private review workspace are outside cloud-synced folders. The proposed downloadable kit contains exactly those allowlisted files. The plugin package contains 20 files; its unpacked contents, package, and setup executable are covered by [payload.json](payload.json). [SHA256SUMS](SHA256SUMS) verifies the 23 payload/manifest entries. The outer release ZIP has a separate SHA-256 checksum alongside it.
 
-The final candidate commit ID, exact staged inventory with file hashes, archive checksum, and detailed test evidence are recorded in the owner's separate local review report. They are kept outside this tree to avoid a self-referential commit/hash record. Git author and committer use the project name and a reserved, non-deliverable .invalid email address. There is no imported upstream Git history.
+The final candidate commit ID, exact staged inventory with file hashes, archive checksum, and detailed test evidence are recorded in the owner's separate local review report. They are kept outside this tree to avoid a self-referential commit/hash record. Git commits use the project identity or the approved public GitHub identity with a noreply email. There is no imported upstream Git history.
 
 ## Completed local checks
 
@@ -25,7 +25,7 @@ The final candidate commit ID, exact staged inventory with file hashes, archive 
 | Video | The reviewed 1080p source was reduced to silent H.264, 1280 × 720 at 24 fps, preserving the full walkthrough and separate captions. Source review included a contact sheet and offline OCR from all 1,104 source frames with no private identifiers or removed personal statistics matched. The smaller encode passed full-frame decode, metadata, browser playback and visual checks; no new content is introduced. The MP4 is 1.4 MiB and has fast-start layout. The finite hero preview is 706 KiB; desktop/mobile fit and the reduced-motion poster were verified locally. |
 | Demo | Desktop and 390-pixel mobile layouts, keyboard focus, task states, navigation, independent Voice controls, reasoning, lighting presets, offline lights, pause/reset, reduced motion, and WebGL fallback checked locally. Video playback passed. Requests remained local; no account or microphone access. |
 | README embedded media | A finite 4.8-second hero preview comes from the reviewed film, with a static alternative for reduced motion. Two further finite GIFs use the shipped task/Voice renderers; static PNG alternatives and an original dial guide are included. All 105 source frames passed SVG parsing, browser rasterization, and local OCR review. All encoded GIF frames decode, with no loop extension or image EXIF. Desktop/mobile sizing, alt text, and keyboard demo links checked locally. |
-| README links | All local Markdown links and embedded-image paths resolve. Public Pages hosting remains disabled pending approval. |
+| README links | All local Markdown links and embedded-image paths resolve. Interactive links target the GitHub Pages demo. |
 
 The scanner covers the exact allowlist, Git index, nested ZIP/plugin/profile archives, unsafe paths and symlinks, common credential formats, private owner-supplied identifiers, machine paths, live-state filenames, device bindings, and payload/archive mismatches. Review found and removed build-path leakage from an earlier dependency location before the final build. Private matching lists, raw findings, screenshots, OCR outputs, and historical artifacts are excluded from this repository.
 
@@ -52,7 +52,7 @@ The version matrix and complete live checklist are in [VERIFICATION.md](docs/VER
 - Zero-, one-, two-, and offline-light configurations on real devices, plus system volume/mute.
 - A nontechnical installation walkthrough and owner review of the exact candidate.
 
-Do not publish until these gates and owner approval are complete. Changes to the reviewed candidate require the relevant checks again. An approved first source push would still be followed by CI/artifact inspection before separately publishing a release or demo site.
+Do not publish until these gates and owner approval are complete. Changes to the reviewed candidate require the relevant checks again. Browser-demo deployment does not publish or approve an installable release.
 
 ## Identifier and script review
 
@@ -60,8 +60,8 @@ The plugin/action namespace is project-neutral. It is not a machine-specific acc
 
 ## Fresh publication history
 
-The technical namespace is `io.streamdex.plugin`. The package author, plugin author and Git commit identity use the project name. Personal author credit is retained in the README and license notices; the canonical repository URL retains its GitHub owner. Source, profiles, compiled executables and nested packages are checked for the retired identifier and unexpected personal-name references. The new root commit contains only this reviewed snapshot; earlier snapshots remain outside the release tree as private backups.
+The technical namespace is `io.streamdex.plugin`. The package and plugin author use the project name; Git merges may use the approved public GitHub noreply identity. Personal author credit is retained in the README and license notices; the canonical repository URL retains its GitHub owner. Source, profiles, compiled executables and nested packages are checked for the retired identifier and unexpected personal-name references. The new root commit contains only this reviewed snapshot; earlier snapshots remain outside the release tree as private backups.
 
 ## Repository workflow checks
 
-The contribution workflow adds isolated GitHub Actions checks for committed source/payload integrity, documentation links, auditor regression fixtures, the native/JavaScript build, plugin packaging, and the existing target/Voice/installer suites. Third-party actions are pinned to commit IDs; repository access is read-only and credentials are not persisted. No workflow uploads artifacts, installs a live plugin, publishes a release or deploys Pages. Main uses pull requests, a required Build and test check, resolved review conversations, and a linear history. Source-level CI approval is separate from the live release gates above.
+The contribution workflow adds isolated GitHub Actions checks for committed source/payload integrity, documentation links, auditor regression fixtures, the native/JavaScript build, plugin packaging, and the existing target/Voice/installer suites. Third-party actions are pinned to commit IDs; repository access is read-only and credentials are not persisted. Build and test uploads no artifacts, installs no live plugin and publishes no release. After that job succeeds on main, Publish demo uploads only the tracked static website and deploys to GitHub Pages. Pull requests cannot deploy. Main uses pull requests, a required Build and test check, resolved review conversations, and a linear history. Source-level CI approval is separate from the live release gates above.
