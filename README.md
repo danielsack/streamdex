@@ -6,7 +6,7 @@ I built Streamdex to experiment with how I work with AI agents. It puts eight Co
 
 I'm sharing the setup and the ideas behind it. If some of it is useful for your own workflow, great.
 
-<a href="docs/assets/streamdex-hero.mp4">
+<a href="https://danielsack.github.io/streamdex/demo/#walkthrough">
   <picture>
     <source media="(prefers-reduced-motion: reduce)" srcset="docs/assets/hero-poster.jpg">
     <img src="docs/assets/hero-preview.gif" alt="Codex beside a moving 3D Stream Deck+: select a task to bring its question into view. Open the full walkthrough." width="800" height="450">
@@ -15,13 +15,13 @@ I'm sharing the setup and the ideas behind it. If some of it is useful for your 
 
 *Five-second preview plays once. [Static preview](docs/assets/hero-poster.jpg).*
 
-**[Watch the walkthrough](docs/assets/streamdex-hero.mp4)** (37 seconds, 1.4 MB) · **[Try the demo](#try-it-without-hardware)** · **[Setup](#setup)**
+**[Watch the walkthrough](https://danielsack.github.io/streamdex/demo/#walkthrough)** (37 seconds, 1.4 MB) · **[Try the demo](https://danielsack.github.io/streamdex/demo/)** · **[Setup](#setup)**
 
 ## What is on the deck
 
 Each card shows a task title, project, and status. Running tasks have a moving blue border; questions pulse amber and errors pulse red. Green means a new response is ready. Gray means you've opened it.
 
-[![Task states: moving blue RUN, pulsing amber INPUT and red ERROR, green READY and gray SEEN](docs/assets/readme-status.gif)](docs/demo/index.html)
+[![Task states: moving blue RUN, pulsing amber INPUT and red ERROR, green READY and gray SEEN](docs/assets/readme-status.gif)](https://danielsack.github.io/streamdex/demo/)
 
 *Animation plays once. [Static task-state guide](docs/assets/readme-status-still.png).*
 
@@ -29,7 +29,7 @@ The controls follow the selected task. Open its conversation or output, dictate 
 
 Voice has separate microphone and speaker buttons: green when enabled, red when muted. When Voice ends, those controls switch back to Quick chat and New task.
 
-[![Quick chat and New task become independent microphone and speaker controls during Voice, then return when Voice ends](docs/assets/readme-voice.gif)](docs/demo/index.html)
+[![Quick chat and New task become independent microphone and speaker controls during Voice, then return when Voice ends](docs/assets/readme-voice.gif)](https://danielsack.github.io/streamdex/demo/)
 
 *Mobile keys shown; Stream Deck+ uses the touch strip. [Static Voice example](docs/assets/readme-voice-still.png).*
 
@@ -41,7 +41,7 @@ On Stream Deck+, all eight tasks stay on the first page. The touch strip handles
 
 The dials handle volume and optional Elgato lights. Without lights, the third dial lets you preview a reasoning level and press to apply it to the selected task.
 
-[![Four dials controlling optional lights, reasoning and Mac volume](docs/assets/readme-dials.png)](docs/demo/index.html)
+[![Four dials controlling optional lights, reasoning and Mac volume](docs/assets/readme-dials.png)](https://danielsack.github.io/streamdex/demo/)
 
 | Dial | With Elgato lights | Without lights |
 |---|---|---|
@@ -52,9 +52,11 @@ The dials handle volume and optional Elgato lights. Without lights, the third di
 
 ## Try it without hardware
 
-[![Interactive Streamdex model with task buttons and guided scenarios](docs/assets/demo-preview.png)](docs/demo/index.html)
+[![Interactive Streamdex model with task buttons and guided scenarios](docs/assets/demo-preview.png)](https://danielsack.github.io/streamdex/demo/)
 
-Download this repository and open **[docs/demo/index.html](docs/demo/index.html)** in your browser. Turn the model, select a task, open a question, and try the Voice controls or dial presets. Keyboard controls, pause/reset, and reduced motion are available too. The demo runs locally without connecting to Codex or using your microphone.
+**[Open the interactive demo](https://danielsack.github.io/streamdex/demo/)** in your browser. Turn the model, select a task, open a question, and try the Voice controls or dial presets. Keyboard controls, pause/reset, and reduced motion are available too. No installation or sign-in is needed; the demo does not connect to Codex or use your microphone.
+
+For offline use, download this repository and open `docs/demo/index.html`.
 
 ## Setup
 
