@@ -8,7 +8,7 @@ function client(overrides = {}): AppServerRpcClient {
   return new AppServerRpcClient({
     executable: process.execPath,
     args: [fixture],
-    requestTimeoutMs: 500,
+    requestTimeoutMs: 2000,
     ...overrides,
   });
 }

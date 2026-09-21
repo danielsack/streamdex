@@ -1,0 +1,42 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-test:
+    name: Build and test
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      - name: Check out reviewed source
+        uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - name: Set up Node
+        uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        with:
+          node-version-file: .nvmrc
+      - name: Verify checked-in source and payload before rebuilding
+        run: |
+          python3 scripts/audit.py --source-only --staged
+          shasum -a 256 -c SHA256SUMS
+      - name: Install pinned dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Select the runner toolchain
+        run: |
+          test "$(uname -m)" = arm64
+          printf 'DEVELOPER_DIR=%s\n' "$(xcode-select -p)" >> "$GITHUB_ENV"
+      - name: Build, test, package, and audit
+        run: npm run check

@@ -32,7 +32,11 @@
     "test:custom": "node --test test/custom/*.test.mjs",
     "pack": "node scripts/package.mjs",
     "audit:local": "node scripts/audit.mjs",
-    "check": "npm run build && npm run typecheck && npm run pack && npm test && npm run test:custom && npm run audit:local"
+    "check": "npm run typecheck && npm run check:docs && npm run test:audit && npm run build && npm run pack && npm test && npm run test:custom && npm run audit:local",
+    "test:fast": "vitest run --project unit",
+    "test:audit": "python3 -m unittest discover -s test -p 'audit_test.py' -v",
+    "check:docs": "node scripts/check-docs.mjs",
+    "audit:source": "node scripts/audit.mjs --source-only"
   },
   "dependencies": {
     "@elgato/streamdeck": "2.1.2"

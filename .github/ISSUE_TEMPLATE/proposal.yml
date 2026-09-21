@@ -1,0 +1,19 @@
+name: Experiment proposal
+description: Describe a focused idea or contribution. No implementation or review is promised.
+title: "Proposal: "
+body:
+  - type: markdown
+    attributes:
+      value: This is an experimental snapshot with no support or maintenance commitment. Use fictional examples and keep private or restricted information out of this public issue.
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem and proposed behavior
+      description: Explain the use case, a small change that addresses it, and any alternatives.
+    validations:
+      required: true
+  - type: textarea
+    id: verification
+    attributes:
+      label: How could it be checked?
+      description: Describe an observable result, a fictional test, or a hardware check.

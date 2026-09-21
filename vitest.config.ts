@@ -5,14 +5,13 @@ import { transformWithOxc } from "vite";
 // Node process. `npm run test:fast` skips them for the inner loop; `check`
 // and CI run both projects.
 const integrationTests = [
-  "test/build-pipeline.test.ts",
-  "test/health-diagnostics.test.ts",
-  "test/keypad-profiles.test.ts",
+  "test/*.fixture.test.ts",
+  "test/app-server-rpc.test.ts",
   "test/model-dial.acceptance.test.ts",
   "test/native-*.test.ts",
   "test/physical-input.acceptance.test.ts",
   "test/plan-mode.acceptance.test.ts",
-  "test/profile-installer.test.ts",
+  "test/production-helper.acceptance.test.ts",
   "test/ptt-guard.test.ts",
   "test/reasoning-dial.acceptance.test.ts",
 ];
@@ -36,7 +35,7 @@ export default defineConfig({
     coverage: { enabled: false },
     environment: "node",
     testTimeout: 20000,
-    maxWorkers: 4,
+    maxWorkers: 2,
     projects: [
       {
         extends: true,

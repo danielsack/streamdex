@@ -1,0 +1,27 @@
+name: Reproducible bug
+description: Record a reproducible defect using fictional data. No response or fix is promised.
+title: "Bug: "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        This experiment offers no support or response commitment. Do not paste live task content, profiles, databases, secrets, private URLs, or raw logs. Keep sensitive security details private; see SECURITY.md.
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Minimal reproduction
+      description: Use fictional tasks and generic paths. Explain the steps and what should happen versus what happens.
+    validations:
+      required: true
+  - type: textarea
+    id: environment
+    attributes:
+      label: Relevant public versions
+      description: macOS, Stream Deck, public Codex version, device type, and Streamdex commit. Omit serial numbers, account details, and restricted build information.
+    validations:
+      required: true
+  - type: textarea
+    id: proposed-change
+    attributes:
+      label: Proposed change or regression test
+      description: Optional explanation of a possible fix or a small fictional test case.

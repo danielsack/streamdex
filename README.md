@@ -1,5 +1,7 @@
 # Streamdex
 
+[![CI](https://github.com/danielsack/streamdex/actions/workflows/ci.yml/badge.svg)](https://github.com/danielsack/streamdex/actions/workflows/ci.yml)
+
 An experiment in ways of working with agentic workflows, using Stream Deck+ and Mobile to keep Codex tasks in view and put common controls within reach.
 
 Shared as an experimental snapshot. No support is provided, and there is no commitment to ongoing maintenance, updates, or compatibility fixes.
@@ -83,6 +85,10 @@ This setup reads local Codex state and uses macOS Accessibility for visible app 
 Task and project titles appear on the physical deck and on Mobile. Treat those screens like your Codex window when sharing a desk, presenting, or taking screenshots. The public demo and photos use fictional tasks to illustrate the experiment.
 
 Streamdex reads local task state and controls the app on your Mac. This does not make Codex’s AI processing offline or change its account, retention, permission, or organization settings. Use it only where those settings and the required Accessibility access are appropriate. Voice mic and speaker buttons affect the Codex Voice session, not meeting apps or the Mac’s microphone permissions. See [data handling and privacy](docs/PRIVACY.md).
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for branches, pull requests, local checks, and privacy requirements. Changes go through a pull request with the **Build and test** check on GitHub Actions. This remains an experiment with no review, support, or maintenance commitment.
 
 ## Source and credit
 

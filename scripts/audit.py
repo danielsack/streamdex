@@ -2,7 +2,7 @@
 import argparse, hashlib, io, json, os, re, stat, subprocess, sys, zipfile
 from pathlib import Path
 root=Path(__file__).resolve().parent.parent
-parser=argparse.ArgumentParser();parser.add_argument('--private-patterns');parser.add_argument('--staged',action='store_true');parser.add_argument('--report');args=parser.parse_args()
+parser=argparse.ArgumentParser();parser.add_argument('--private-patterns');parser.add_argument('--staged',action='store_true');parser.add_argument('--report');parser.add_argument('--source-only',action='store_true',help='Audit committed source/payload without requiring a locally generated release ZIP');args=parser.parse_args()
 allow=json.loads((root/'release-files.json').read_text())['files'];findings=[];scanned=[];archive_entries=0
 private=json.loads(Path(args.private_patterns).read_text()) if args.private_patterns else []
 rules=[('private-key',re.compile(rb'-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----')),('github-token',re.compile(rb'(?:gh[pousr]_[A-Za-z0-9]{30,}|github_pat_[A-Za-z0-9_]{60,})')),('service-token',re.compile(rb'sk-(?:proj-)?[A-Za-z0-9_-]{40,}')),('aws-key',re.compile(rb'AKIA[0-9A-Z]{16}')),('personal-path',re.compile(b'/'+b'Users'+rb'/(?!example(?:/|\b)|test(?:/|\b)|demo(?:/|\b))[^\s/"\x00]{1,80}/'))]
@@ -13,7 +13,7 @@ def inspect(path,data,depth=0):
  global archive_entries
  if depth>5:fail(path,'archive-depth');return
  parts=Path(path).parts
- if any(v in forbidden for v in parts) or any(v in {'node_modules','.git','logs','travel-state','plus-v2-state','__MACOSX'} for v in parts) or path.endswith(('.map','.log','.sqlite','.sqlite-wal','.sqlite-shm')):fail(path,'forbidden-content')
+ if any(v in forbidden for v in parts) or any(v in {'node_modules','.git','logs','travel-state','plus-v2-state','__MACOSX','__pycache__'} for v in parts) or path.endswith(('.map','.log','.sqlite','.sqlite-wal','.sqlite-shm')):fail(path,'forbidden-content')
  for name,pat in rules:
   if pat.search(data) or pat.search(data.replace(bytes([0]),b'')):fail(path,name)
  if path.endswith('.json'):
@@ -44,6 +44,7 @@ def walk(directory):
  for p in directory.iterdir():
   if p.parent==root and p.name in ignored:continue
   if p.is_symlink():fail(str(p.relative_to(root)),'unexpected-symlink')
+  elif p.is_dir() and p.name=='__pycache__':continue
   elif p.is_dir():walk(p)
   elif str(p.relative_to(root)) not in allow:fail(str(p.relative_to(root)),'not-allowlisted')
 walk(root)
@@ -51,14 +52,14 @@ payload=json.loads((root/'payload.json').read_text())['files']
 for name,sha in payload.items():
  if name not in allow or not (root/name).is_file() or hashlib.sha256((root/name).read_bytes()).hexdigest()!=sha:fail(name,'payload-hash-mismatch')
 archive=root/'.dist/streamdex-0.1.0-beta.1-macos-arm64.zip'
-if archive.exists():
+if archive.exists() and not args.source_only:
  inspect('release-kit.zip',archive.read_bytes())
  with zipfile.ZipFile(archive) as z:
   names={i.filename for i in z.infolist() if not i.is_dir()}
   if names!=set(allow):fail('release-kit.zip','kit-file-set-mismatch')
   for name in names&set(allow):
    if z.read(name)!=(root/name).read_bytes():fail(name,'kit-content-mismatch')
-else:fail('release-kit.zip','missing-release-kit')
+elif not args.source_only:fail('release-kit.zip','missing-release-kit')
 if args.staged:
  names=subprocess.check_output(['git','ls-files','--cached','-z'],cwd=root).decode().split('\0');names=[n for n in names if n]
  if set(names)!=set(allow):fail('git-index','staged-file-set-mismatch')

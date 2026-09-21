@@ -7,14 +7,13 @@ The baseline is Todd Dailey's MIT-licensed streamdeckcodex v0.2.4, with the exac
 Developers need Node 24+, the pinned npm dependencies, and macOS command-line developer tools for Swift. The end-user kit includes the compiled production helpers. The build also produces .build/test-bin/codex-ui-control with STREAMDEX_TESTING enabled for fixture tests. That test executable is excluded from every release package; production commands reject unsupported input before accessing a running app. Build on Apple Silicon:
 
 ```sh
-npm ci
-npm run build
-npm run typecheck
-npm test
-npm run test:custom
-npm run pack
-npm run audit:local
+npm ci --ignore-scripts --no-audit --no-fund
+npm run check
 ```
+
+The complete check runs typechecking, local documentation/asset links, release-audit regression tests, the source build, package validation, all TypeScript/native fixture tests, controller/profile/installer tests, and the final artifact audit. Packaging runs before installer tests because those tests verify the generated checksums.
+
+For focused work, use `npm run test:fast`, `npm run test:audit`, `npm run check:docs`, or `npm run typecheck`. After building and packaging, `npm test` and `npm run test:custom` run the remaining suites. `npm run audit:source -- --staged` checks the committed source and payload without requiring an outer ZIP; `npm run audit:local -- --staged` additionally verifies the exact generated release kit. Do not use source-only mode as a release audit substitute.
 
 Set DEVELOPER_DIR if your installed developer toolchain is somewhere else. No Apple Developer subscription or notarization credentials are used. The build applies ad hoc signatures, emits no source maps, and maps compilation paths to a neutral prefix. Dependency versions and integrity hashes are locked in package-lock.json.
 
@@ -38,4 +37,4 @@ The procedural Three.js model and accessible controls run without a server or re
 
 ## Publication boundary
 
-Do not enable GitHub Actions, upload media, push any branch/tag, publish a release, or deploy Pages until the exact local candidate passes review and its owner approves publication. After an approved first source push, review CI logs and artifacts before release publication. Pages would serve docs, with the demo at /demo/.
+GitHub Actions runs the reviewed CI workflow on pull requests and pushes to main, with manual runs available. It checks source and committed payload integrity before rebuilding on an isolated macOS Apple Silicon runner. The token has read-only permissions, fork runs require approval, and no artifacts are uploaded. Review the CI results before merging. CI success does not approve a release or establish hardware compatibility. Media uploads, release publication and Pages deployment still require separate approval of the exact audited candidate. Pages would serve docs, with the demo at /demo/.

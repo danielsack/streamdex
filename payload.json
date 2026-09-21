@@ -19,9 +19,9 @@
     "io.streamdex.plugin.sdPlugin/manifest.json": "52dca75967be1144c838f2cdb416272c08dfefb4719351ea665c954f8b94c596",
     "io.streamdex.plugin.sdPlugin/scripts/codex-control.applescript": "c4e746909b83bffee2d16a0d3f7d82d82f1a87b36b059bc8ba8846dc7e82b50e",
     "io.streamdex.plugin.sdPlugin/scripts/ptt-guard.mjs": "0294191bbb3634ae2ff106aed7d28193e31c077ef354ce78dfc522ca96e95399",
-    "io.streamdex.plugin.sdPlugin/streamdex-mobile.streamDeckProfile": "b22a6d275637750a5ecc0975cde91828bfcb55faecbbccba7f25778430db15d0",
-    "io.streamdex.plugin.sdPlugin/streamdex-plus.streamDeckProfile": "ac3f741705768128044d742f5afa73db7e769d497ffd5821b6af64ec7ec4f2bd",
-    "io.streamdex.plugin.streamDeckPlugin": "a72950d2188e22041a5c91b243eefe0afea1761fb85294cb55e31519dc3f8597",
+    "io.streamdex.plugin.sdPlugin/streamdex-mobile.streamDeckProfile": "043b955dfe075519bed539dbb446c1410d8ee87cfe45b8fc61f874d610ff1a3d",
+    "io.streamdex.plugin.sdPlugin/streamdex-plus.streamDeckProfile": "13a0f82575c3ec73b5c4882bc1829c7465fecb3a3b83f45248f07e9b7efb69f9",
+    "io.streamdex.plugin.streamDeckPlugin": "ea9f51928262fb611a030176ee65bac4bd55e863dc0cdfdc6da86e1004e1b570",
     "streamdex-setup": "46d6a94470218ed491903866fecf22005ec77c65e6929547d5a320763613fd7b"
   }
 }
