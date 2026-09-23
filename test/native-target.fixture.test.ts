@@ -150,6 +150,49 @@ describe("native exact-target fixture", () => {
     check([files[0]!, added, ...files.slice(-6).reverse()], 2001);
   });
 
+  it("ignores large Unicode log output while retaining the latest complete focus event", () => {
+    const noise =
+      "2026-01-01 INFO fictional événement 🌱 漢字 progress=" +
+      "sample ".repeat(20) +
+      "\n";
+    const content =
+      noise.repeat(20000) +
+      activity("task-a", "window-a") +
+      "\n" +
+      noise.repeat(1000) +
+      activity("task-b", "window-b", "2026-07-26T04:03:00.000Z");
+    expect(evaluateMulti([{ name: "unicode.log", content }], "task-b")).toBe(0);
+    expect(evaluateMulti([{ name: "unicode.log", content }], "task-a")).toBe(1);
+  });
+
+  it("keeps byte offsets and intervening focus changes intact after multibyte output", () => {
+    const prefix = "Fictional événement 🌱 漢字\n";
+    const content = prefix + activity("task-a", "window-a") + "\n";
+    const offset = Buffer.byteLength(prefix, "utf8");
+    expect(
+      evaluateMulti([{ name: "unicode.log", content }], "task-a", {
+        offsets: { "unicode.log": offset },
+      }),
+    ).toBe(0);
+    const diverted =
+      content +
+      activity("task-b", "window-b") +
+      "\n" +
+      activity("task-a", "window-a");
+    expect(
+      evaluateMulti([{ name: "unicode.log", content: diverted }], "task-a", {
+        offsets: { "unicode.log": offset },
+      }),
+    ).toBe(1);
+    // Starting inside an emoji cannot turn a malformed fragment into proof.
+    const insideEmoji = Buffer.byteLength("Fictional événement ", "utf8") + 1;
+    expect(
+      evaluateMulti([{ name: "unicode.log", content }], "task-a", {
+        offsets: { "unicode.log": insideEmoji },
+      }),
+    ).toBe(1);
+  });
+
   it("arbitrates the newest focused-primary event globally across separate logs", () => {
     expect(
       evaluateMulti(

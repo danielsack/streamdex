@@ -106,10 +106,12 @@ func databaseProvenance(_ path: String) -> DatabaseProvenance? {
     return DatabaseProvenance(identity: identity, creationDate: values.creationDate)
 }
 
+private let witnessMarker = Data("thread_stream_view_activity_changed".utf8)
+
 func witness(in text: String) -> DesktopWitness? {
     for line in text.split(separator: "\n").reversed() {
         let value = String(line)
-        guard value.contains("thread_stream_view_activity_changed"),
+        guard Data(value.utf8).range(of: witnessMarker) != nil,
               value.contains("active=true"),
               value.contains("rendererWindowAppearance=primary"),
               value.contains("rendererWindowFocused=true")
@@ -145,9 +147,7 @@ func latestWitness(in data: Data) -> DesktopWitness? {
 // Eight logs at this cap remain within the 128 MiB observer read budget.
 let maximumWitnessReadBytes: UInt64 = 16 * 1024 * 1024
 
-func witnessTimestamp(_ line: String, fallback: TimeInterval) -> TimeInterval {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+func witnessTimestamp(_ line: String, fallback: TimeInterval, formatter: ISO8601DateFormatter) -> TimeInterval {
     let first = line.split(separator: " ").first.map(String.init)
     let field = line.split(separator: " ").first(where: { $0.hasPrefix("timestamp=") })
         .map { String($0.dropFirst("timestamp=".count)) }
@@ -172,23 +172,29 @@ func witnessEvents(path: String, snapshot: DesktopLogSnapshot, from offset: UInt
               let completedSnapshot = unscopedLogSnapshot(path),
               completedSnapshot.identity == initialSnapshot.identity,
               completedSnapshot.size >= initialSnapshot.size,
-              let text = String(data: data, encoding: .utf8)
+              String(data: data, encoding: .utf8) != nil
         else { return nil }
         var byteCursor = offset
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        // Split and reject unrelated lines as bytes. Log markers are ASCII;
+        // expensive Unicode searches are reserved for actual focus events.
+        let lines = data.split(separator: UInt8(10), omittingEmptySubsequences: false)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return lines.enumerated().compactMap { index, line in
-            let lineText = String(line)
-            let separatorBytes = index < lines.count - 1 || data.last == 10 ? 1 : 0
-            let end = byteCursor + UInt64(lineText.lengthOfBytes(using: .utf8) + separatorBytes)
+            let separatorBytes = index < lines.count - 1 ? 1 : 0
+            let end = byteCursor + UInt64(line.count + separatorBytes)
             defer { byteCursor = end }
-            guard var event = witness(in: lineText) else { return nil }
+            guard line.range(of: witnessMarker) != nil,
+                  let lineText = String(data: line, encoding: .utf8),
+                  var event = witness(in: lineText)
+            else { return nil }
             event = DesktopWitness(
                 conversationId: event.conversationId,
                 rendererWindowId: event.rendererWindowId,
                 path: path,
                 cursor: end,
                 fileIdentity: initialSnapshot.identity,
-                observedAt: witnessTimestamp(lineText, fallback: initialSnapshot.modifiedAt),
+                observedAt: witnessTimestamp(lineText, fallback: initialSnapshot.modifiedAt, formatter: formatter),
                 fileModifiedAt: initialSnapshot.modifiedAt
             )
             return event
