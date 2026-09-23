@@ -17601,7 +17601,7 @@ var plugin_default = streamDeck;
 
 // src/plugin.ts
 import { chmodSync as chmodSync2 } from "node:fs";
-import { fileURLToPath as fileURLToPath6 } from "node:url";
+import { fileURLToPath as fileURLToPath7 } from "node:url";
 import { join as join6 } from "node:path";
 
 // src/actions/workdesk.ts
@@ -20366,9 +20366,9 @@ function createRefreshCoordinator(callback, intervalMs, onError, setIntervalFn =
 
 // src/custom/travel-pilot.mjs
 init_define_STREAMDECK_CODEX_BUILD();
-import { execFile as execFile2 } from "node:child_process";
+import { execFile as execFile3 } from "node:child_process";
 import { promisify as promisify2 } from "node:util";
-import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { fileURLToPath as fileURLToPath4 } from "node:url";
 
 // src/custom/travel-requests.mjs
 init_define_STREAMDECK_CODEX_BUILD();
@@ -20400,10 +20400,12 @@ function createRequestTracker() {
     plan = void 0;
   }
   function read() {
-    const r = [...requests.values()].at(-1);
+    const all = [...requests.values()];
+    const r = all.filter((request) => !request.async).at(-1) ?? all.at(-1);
     return r ? {
       id: r.id,
       kind: r.kind,
+      blocking: !r.async,
       title: [...r.questions.values()][0] ?? "Input requested"
     } : plan;
   }
@@ -20543,6 +20545,133 @@ function createRequestReader() {
       return void 0;
     } finally {
       if (fd !== void 0) closeSync3(fd);
+    }
+  };
+}
+
+// src/custom/sidebar-approvals.mjs
+init_define_STREAMDECK_CODEX_BUILD();
+import { execFile as execFile2 } from "node:child_process";
+import { fileURLToPath as fileURLToPath3 } from "node:url";
+import { DatabaseSync as DatabaseSync2 } from "node:sqlite";
+var normalize = (value) => String(value ?? "").replace(/\s+/g, " ").trim();
+var titleOf = (task) => normalize(task.displayTitle || task.title);
+var MAX_AGE = 6e3;
+function readSidebar(titles) {
+  return new Promise((resolve5) => {
+    const child = execFile2(
+      fileURLToPath3(new URL("./sidebar-control", import.meta.url)),
+      ["read"],
+      { timeout: 2500, maxBuffer: 64 * 1024 },
+      (error40, stdout) => {
+        if (error40) return resolve5({ ok: false });
+        try {
+          resolve5(JSON.parse(stdout));
+        } catch {
+          resolve5({ ok: false });
+        }
+      }
+    );
+    child.stdin.on("error", () => {
+    });
+    child.stdin.end(JSON.stringify({ titles }));
+  });
+}
+function createTitleIndex(databasePath) {
+  let database;
+  return {
+    read() {
+      if (!database) {
+        database = new DatabaseSync2(databasePath, {
+          readOnly: true,
+          timeout: 1e3
+        });
+        database.exec("PRAGMA query_only = ON");
+      }
+      const columns = new Set(
+        database.prepare("PRAGMA table_info(threads)").all().map((c) => c.name)
+      );
+      const expression = columns.has("name") ? "COALESCE(NULLIF(name, ''), title)" : "title";
+      const rows = database.prepare(
+        `SELECT id, ${expression} AS title FROM threads WHERE archived = 0 LIMIT 20001`
+      ).all();
+      if (rows.length > 2e4) throw Error("title-index-limit");
+      return rows;
+    },
+    close() {
+      database?.close();
+      database = void 0;
+    }
+  };
+}
+function createSidebarApprovalObserver({
+  call = readSidebar,
+  titleIndex,
+  now = Date.now
+} = {}) {
+  let observed = /* @__PURE__ */ new Map(), at = -Infinity, lastPoll = -Infinity, pending, stopped = false;
+  function requestFor(task) {
+    const entry = observed.get(task?.id);
+    if (!entry || now() - at > MAX_AGE || entry.title !== titleOf(task) || ["read", "unread", "error", "off"].includes(task.status) || task.completedAt && task.completedAt >= at)
+      return void 0;
+    return {
+      kind: "approval",
+      title: "Approval required",
+      source: "sidebar",
+      id: "sidebar:" + task.id
+    };
+  }
+  async function poll(tasks) {
+    if (stopped || pending || now() - lastPoll < 2e3) return pending;
+    lastPoll = now();
+    pending = (async () => {
+      const startedAt = now();
+      try {
+        const rows = titleIndex.read(), identities = /* @__PURE__ */ new Map();
+        for (const row of rows) {
+          const title = normalize(row.title), ids = identities.get(title) ?? /* @__PURE__ */ new Set();
+          ids.add(row.id);
+          identities.set(title, ids);
+        }
+        const seen = /* @__PURE__ */ new Set();
+        const candidates = tasks.filter((task) => {
+          if (!task?.id || seen.has(task.id)) return false;
+          seen.add(task.id);
+          const title = titleOf(task), ids = identities.get(title);
+          return title && ids?.size === 1 && ids.has(task.id);
+        }).slice(0, 16).map((task) => ({ id: task.id, title: titleOf(task) }));
+        if (!candidates.length) {
+          observed.clear();
+          return;
+        }
+        const response = await call(candidates.map((c) => c.title));
+        if (stopped) return;
+        const latest = titleIndex.read(), next = /* @__PURE__ */ new Map();
+        if (response?.ok === true && Array.isArray(response.rows) && now() - startedAt <= MAX_AGE) {
+          for (let i = 0; i < candidates.length; i++) {
+            const c = candidates[i], matches = response.rows.filter((r) => r.titleIndex === i);
+            const names = latest.filter((r) => normalize(r.title) === c.title);
+            if (matches.length === 1 && matches[0].pending === true && names.length === 1 && names[0].id === c.id)
+              next.set(c.id, { title: c.title });
+          }
+        }
+        observed = next;
+        at = startedAt;
+      } catch {
+        observed.clear();
+      }
+    })().finally(() => {
+      pending = void 0;
+    });
+    return pending;
+  }
+  return {
+    poll,
+    requestFor,
+    stop() {
+      stopped = true;
+      observed.clear();
+      titleIndex?.close?.();
     }
   };
 }
@@ -20719,8 +20848,9 @@ function taskSvg(task, slot, time3 = 0) {
     s += `<rect x="11" y="11" width="23" height="23" rx="6" fill="${W}"/>` + txt(slot, 22.5, 28, 18, BG);
   else s += txt(slot, 15, 28, 18, M, "start");
   if (["running", "thinking"].includes(task.status))
-    s += runningGlyph(color, time3);
-  s += txt(names[task.status] || "UNKNOWN", 129, 28, 18, color, "end");
+    s += task.optionalQuestion ? `<g transform="translate(-16 0)">${runningGlyph(color, time3)}</g>` : runningGlyph(color, time3);
+  const label = task.optionalQuestion ? ["running", "thinking"].includes(task.status) ? "RUN ?" : "ASK" : names[task.status] || "UNKNOWN";
+  s += txt(label, 129, 28, 18, color, "end");
   const ts = lines(task.title);
   s += ts.map((v, i) => txt(v, 72, ts.length === 1 ? 79 : 64 + i * 28)).join("");
   if (task.status === "stale")
@@ -20918,7 +21048,7 @@ function createProjectResolver(path5) {
 
 // src/custom/travel-pilot.mjs
 import { join as join5 } from "node:path";
-var exec = promisify2(execFile2);
+var exec = promisify2(execFile3);
 var STALE_MS = 30 * 60 * 1e3;
 var HOLD_MS = 800;
 var MAX_FRAME_AGE = 5500;
@@ -20935,9 +21065,10 @@ function projectTask(snapshot, native, now = Date.now(), offline = false) {
       active: false
     };
   let status = snapshot.status;
+  const optionalQuestion = snapshot.pendingRequest?.kind === "question" && snapshot.pendingRequest.blocking === false;
   const matches = native?.ok === true && native.threadId === snapshot.id;
   if (offline) status = "offline";
-  else if (snapshot.pendingRequest || snapshot.status === "needs-input")
+  else if (snapshot.pendingRequest && !optionalQuestion || snapshot.status === "needs-input")
     status = "needs-input";
   else if (matches && native.kind === "running") status = "running";
   else if (snapshot.detail === "Last activity is stale" || ["running", "thinking"].includes(status) && snapshot.lastEventAt > 0 && now - snapshot.lastEventAt > STALE_MS)
@@ -20949,7 +21080,8 @@ function projectTask(snapshot, native, now = Date.now(), offline = false) {
     ...snapshot,
     status,
     title: snapshot.displayTitle || snapshot.title || "Untitled task",
-    active: matches && !offline
+    active: matches && !offline,
+    optionalQuestion: optionalQuestion && !offline && status !== "needs-input"
   };
 }
 function contextPair(frame, now = Date.now()) {
@@ -20984,6 +21116,22 @@ function contextPair(frame, now = Date.now()) {
       detail: "Choose a task key",
       left: choice("SELECT TASK", "none"),
       right: choice("SELECT TASK", "none")
+    };
+  if (!verified && task.pendingRequest?.kind === "approval")
+    return {
+      ...base,
+      kind: "approval",
+      detail: "Approval required",
+      left: choice("OPEN REQUEST", "open"),
+      right: choice("VIEW REQUEST", "open")
+    };
+  if (!verified && task.pendingRequest?.kind === "question")
+    return {
+      ...base,
+      kind: "question",
+      detail: task.pendingRequest.title || "Question available",
+      left: choice("OPEN QUESTION", "open"),
+      right: choice("VIEW OPTIONS", "open")
     };
   if (!verified)
     return {
@@ -21065,7 +21213,7 @@ function sameGesture(start, current, now = Date.now()) {
   return !a.hold || now - start.at >= HOLD_MS;
 }
 async function nativeCall(command2, id, operation, token) {
-  const helper2 = fileURLToPath3(new URL("./travel-ui-control", import.meta.url));
+  const helper2 = fileURLToPath4(new URL("./travel-ui-control", import.meta.url));
   try {
     const { stdout } = await exec(
       helper2,
@@ -21104,8 +21252,19 @@ function installTravelPilot(deps) {
     logger2.info(
       `Travel restored ${ledger.restore(store)} read acknowledgements`
     );
+  const approvalObserver = deps.approvalObserver ?? (store.databasePath ? createSidebarApprovalObserver({
+    titleIndex: createTitleIndex(store.databasePath),
+    now
+  }) : void 0);
   const requestFor = deps.requestFor || createRequestReader();
-  const withRequest = (task) => task ? { ...task, pendingRequest: requestFor(task) } : task;
+  const withRequest = (task) => {
+    if (!task) return task;
+    const request = requestFor(task), approval = approvalObserver?.requestFor(task);
+    return {
+      ...task,
+      pendingRequest: request?.blocking === false ? approval || request : request || approval
+    };
+  };
   const resolveProject = deps.projectName || createProjectResolver(
     store.codexHome ? join5(store.codexHome, ".codex-global-state.json") : void 0
   );
@@ -21254,7 +21413,9 @@ function installTravelPilot(deps) {
   async function poll() {
     if (!visible.size) return;
     try {
-      const sessions = store.sessions(8).map(withRequest), focus2 = withRequest(store.focusedThread());
+      const rawSessions = store.sessions(8), rawFocus = store.focusedThread();
+      void approvalObserver?.poll([...rawSessions, rawFocus]);
+      const sessions = rawSessions.map(withRequest), focus2 = withRequest(rawFocus);
       if (frame.focus?.id !== focus2?.id) {
         generation++;
         readCandidate = void 0;
@@ -21622,6 +21783,7 @@ function installTravelPilot(deps) {
       logger2.info("Travel pilot v2 active (Travel settings only)");
     },
     stop() {
+      approvalObserver?.stop();
       clearInterval(timer);
       clearInterval(animationTimer);
       timer = void 0;
@@ -21658,17 +21820,17 @@ function installTravelPilot(deps) {
 
 // src/custom/travel-voice.mjs
 init_define_STREAMDECK_CODEX_BUILD();
-import { execFile as execFile4 } from "node:child_process";
+import { execFile as execFile5 } from "node:child_process";
 import { promisify as promisify4 } from "node:util";
-import { fileURLToPath as fileURLToPath4 } from "node:url";
+import { fileURLToPath as fileURLToPath5 } from "node:url";
 import { readFileSync as readFileSync7 } from "node:fs";
 
 // src/custom/travel-more.mjs
 init_define_STREAMDECK_CODEX_BUILD();
 import { readFileSync as readFileSync6 } from "node:fs";
-import { execFile as execFile3 } from "node:child_process";
+import { execFile as execFile4 } from "node:child_process";
 import { promisify as promisify3 } from "node:util";
-var run2 = promisify3(execFile3);
+var run2 = promisify3(execFile4);
 var icons2 = JSON.parse(
   readFileSync6(new URL("./icons.json", import.meta.url), "utf8")
 );
@@ -21791,8 +21953,8 @@ function installTravelMore({
 }
 
 // src/custom/travel-voice.mjs
-var run3 = promisify4(execFile4);
-var helper = fileURLToPath4(new URL("./voice-control", import.meta.url));
+var run3 = promisify4(execFile5);
+var helper = fileURLToPath5(new URL("./voice-control", import.meta.url));
 var icons3 = JSON.parse(
   readFileSync7(new URL("./icons.json", import.meta.url))
 );
@@ -22113,9 +22275,9 @@ function installTravelVoice({
 
 // src/custom/plus-v2.mjs
 init_define_STREAMDECK_CODEX_BUILD();
-import { execFile as execFile5 } from "node:child_process";
+import { execFile as execFile6 } from "node:child_process";
 import { promisify as promisify5 } from "node:util";
-import { fileURLToPath as fileURLToPath5 } from "node:url";
+import { fileURLToPath as fileURLToPath6 } from "node:url";
 
 // src/custom/plus-v2-visuals.mjs
 init_define_STREAMDECK_CODEX_BUILD();
@@ -22307,7 +22469,7 @@ function stripSvg(column, {
 }
 
 // src/custom/plus-v2.mjs
-var run4 = promisify5(execFile5);
+var run4 = promisify5(execFile6);
 var PROFILE = "streamdex-plus";
 var clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 function touchSide(payload) {
@@ -22321,7 +22483,7 @@ function sameContext(a, b, side2) {
 async function codexNative(...args) {
   try {
     const { stdout } = await run4(
-      fileURLToPath5(new URL("./travel-ui-control", import.meta.url)),
+      fileURLToPath6(new URL("./travel-ui-control", import.meta.url)),
       args,
       { timeout: 5e3, maxBuffer: 65536 }
     );
@@ -22728,8 +22890,8 @@ function createReasoningController({
     const picker = label(p.level);
     if (!picker) throw Error("Unsupported reasoning");
     const result = await apply(p.level, picker, p.threadId, p.model);
-    const normalize = (v) => String(v ?? "").toLowerCase().replaceAll(" ", "").replace("extra", "x").replace("light", "low");
-    if (normalize(result.effort) !== p.level)
+    const normalize2 = (v) => String(v ?? "").toLowerCase().replaceAll(" ", "").replace("extra", "x").replace("light", "low");
+    if (normalize2(result.effort) !== p.level)
       throw Error("Reasoning not confirmed");
     return p.level;
   }
@@ -22742,7 +22904,7 @@ function createReasoningController({
 
 // src/plugin.ts
 for (const name of ["codex-ui-control", "travel-ui-control", "voice-control"])
-  chmodSync2(fileURLToPath6(new URL("./" + name, import.meta.url)), 493);
+  chmodSync2(fileURLToPath7(new URL("./" + name, import.meta.url)), 493);
 var workdesk = new WorkdeskAction();
 var agentStatus = new AgentStatusAction();
 var command = new CommandAction();

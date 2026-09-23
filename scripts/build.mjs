@@ -34,6 +34,8 @@ for (const [name, dir] of [
   ["codex-ui-control", "native"],
   ["travel-ui-control", "native/travel"],
   ["voice-control", "native/voice"],
+  ["sidebar-control", "native/sidebar"],
+  ["sidebar-fixtures", "native/sidebar"],
   ["streamdex-setup", "native/setup"],
   ["codex-ui-fixtures", "native"],
 ]) {
@@ -48,15 +50,19 @@ for (const [name, dir] of [
   const target =
     name === "streamdex-setup"
       ? join(root, name)
-      : name === "codex-ui-fixtures"
-        ? join(root, ".build/test-bin/codex-ui-control")
-        : join(bin, name);
-  if (name === "codex-ui-fixtures")
+      : name === "sidebar-fixtures"
+        ? join(root, ".build/test-bin/sidebar-control")
+        : name === "codex-ui-fixtures"
+          ? join(root, ".build/test-bin/codex-ui-control")
+          : join(bin, name);
+  if (["codex-ui-fixtures", "sidebar-fixtures"].includes(name))
     mkdirSync(join(root, ".build/test-bin"), { recursive: true });
   run("/usr/bin/xcrun", [
     "swiftc",
     ...sources,
-    ...(name === "codex-ui-fixtures" ? ["-D", "STREAMDEX_TESTING"] : []),
+    ...(["codex-ui-fixtures", "sidebar-fixtures"].includes(name)
+      ? ["-D", "STREAMDEX_TESTING"]
+      : []),
     "-target",
     "arm64-apple-macos13.0",
     "-O",

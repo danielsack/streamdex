@@ -17,7 +17,7 @@
 - Fresh download and normal macOS/Stream Deck approval flow without security bypasses.
 - Plus alone and Mobile alone: both pages, all cards, current task targeting, restart and reconnect.
 - Voice starts/ends; mic and speaker toggle independently; app-side changes synchronize; locked screen and ambiguous session fail closed.
-- Dictation release, request-specific hold-to-approve/start, request changed mid-gesture, and pending questions while work continues.
+- Dictation release, request-specific hold-to-approve/start, request changed mid-gesture, and optional questions remaining RUN ? while work continues. Check background permission approvals, resolution, duplicate task names, hidden sidebars, and helper timeouts.
 - Read acknowledgements survive restart and do not hide a newer response.
 - Reasoning preview/apply preserves the model and refuses a changed task/model or expired preview.
 - Zero, one, two, and offline light presets; system volume and mute.

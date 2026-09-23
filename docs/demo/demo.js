@@ -311,7 +311,7 @@
     $("selected-status").textContent = selected().state;
     $("selected-status").style.color = selected().color;
     $("selected-description").textContent = {
-      INPUT: "An unanswered question takes priority over running activity.",
+      INPUT: "A blocking question or approval takes priority over running activity.",
       RUN: "The agent is working. Motion signals activity, not percentage complete.",
       READY: "A completed response is waiting to be opened.",
       ERROR: "Open the task to inspect the problem.",
