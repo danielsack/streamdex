@@ -20366,8 +20366,55 @@ function createRefreshCoordinator(callback, intervalMs, onError, setIntervalFn =
 
 // src/custom/travel-pilot.mjs
 init_define_STREAMDECK_CODEX_BUILD();
+
+// src/custom/travel-native.mjs
+init_define_STREAMDECK_CODEX_BUILD();
 import { execFile as execFile2 } from "node:child_process";
-import { promisify as promisify2 } from "node:util";
+function createNativeCaller(helper2, prefix = []) {
+  return (command2, id, operation, token, options = {}) => {
+    const signal = ["read", "globals"].includes(command2) ? options.signal : void 0;
+    if (signal?.aborted)
+      return Promise.resolve({ ok: false, reason: "superseded" });
+    return new Promise((resolve5) => {
+      let response, escalation, cancelled = false;
+      const child = execFile2(
+        helper2,
+        [...prefix, command2, id, ...operation ? [operation, token] : []],
+        {
+          timeout: command2 === "navigate" ? 6500 : 3500,
+          maxBuffer: 256 * 1024
+        },
+        (error40, stdout) => {
+          try {
+            response = JSON.parse(stdout);
+          } catch {
+            response = {
+              ok: false,
+              reason: error40?.killed || error40?.code === "ETIMEDOUT" ? "helper-timeout" : "helper-unavailable"
+            };
+          }
+        }
+      );
+      const cancel = () => {
+        cancelled = true;
+        child.kill("SIGTERM");
+        escalation = setTimeout(() => child.kill("SIGKILL"), 200);
+        escalation.unref?.();
+      };
+      child.once("close", () => {
+        clearTimeout(escalation);
+        signal?.removeEventListener("abort", cancel);
+        resolve5(
+          cancelled ? { ok: false, reason: "superseded" } : response || { ok: false, reason: "helper-unavailable" }
+        );
+      });
+      signal?.addEventListener("abort", cancel, { once: true });
+      if (signal?.aborted) cancel();
+    });
+  };
+}
+
+// src/custom/travel-pilot.mjs
 import { fileURLToPath as fileURLToPath3 } from "node:url";
 
 // src/custom/travel-requests.mjs
@@ -20715,6 +20762,8 @@ function taskSvg(task, slot, time3 = 0) {
   };
   const color = colors[task.status] || M, background = task.status === "error" ? "#301F25" : BG;
   let s = `<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" rx="12" fill="${background}"/>` + taskBorder(task.status, color, time3);
+  if (task.opening)
+    s += `<rect x="5" y="5" width="134" height="134" rx="10" fill="none" stroke="${W}" stroke-width="4"/>`;
   if (task.active)
     s += `<rect x="11" y="11" width="23" height="23" rx="6" fill="${W}"/>` + txt(slot, 22.5, 28, 18, BG);
   else s += txt(slot, 15, 28, 18, M, "start");
@@ -20726,7 +20775,7 @@ function taskSvg(task, slot, time3 = 0) {
   if (task.status === "stale")
     s += `<path d="M58 108l6-6m4 6l6-6m4 6l6-6" stroke="${M}" stroke-width="2"/>`;
   s += txt(
-    fit(task.projectName || "No project", 16),
+    task.opening ? "Opening\u2026" : fit(task.projectName || "No project", 16),
     72,
     130,
     16,
@@ -20918,7 +20967,6 @@ function createProjectResolver(path5) {
 
 // src/custom/travel-pilot.mjs
 import { join as join5 } from "node:path";
-var exec = promisify2(execFile2);
 var STALE_MS = 30 * 60 * 1e3;
 var HOLD_MS = 800;
 var MAX_FRAME_AGE = 5500;
@@ -21064,26 +21112,9 @@ function sameGesture(start, current, now = Date.now()) {
     return false;
   return !a.hold || now - start.at >= HOLD_MS;
 }
-async function nativeCall(command2, id, operation, token) {
-  const helper2 = fileURLToPath3(new URL("./travel-ui-control", import.meta.url));
-  try {
-    const { stdout } = await exec(
-      helper2,
-      [command2, id, ...operation ? [operation, token] : []],
-      { timeout: command2 === "navigate" ? 6500 : 3500, maxBuffer: 256 * 1024 }
-    );
-    return JSON.parse(stdout);
-  } catch (error40) {
-    try {
-      return JSON.parse(error40.stdout);
-    } catch {
-      return {
-        ok: false,
-        reason: error40.killed || error40.code === "ETIMEDOUT" ? "helper-timeout" : "helper-unavailable"
-      };
-    }
-  }
-}
+var nativeCall = createNativeCaller(
+  fileURLToPath3(new URL("./travel-ui-control", import.meta.url))
+);
 function installTravelPilot(deps) {
   const {
     store,
@@ -21099,6 +21130,7 @@ function installTravelPilot(deps) {
   } = deps;
   const settingsTargets = deps.settingsTargets ?? {};
   const call = deps.nativeCall || nativeCall, now = deps.now || Date.now;
+  const monotonicNow = deps.monotonicNow || (() => performance.now());
   const ledger = deps.readLedger || createReadLedger(deps.readStatePath ?? void 0, logger2);
   if (store.acknowledge)
     logger2.info(
@@ -21120,7 +21152,7 @@ function installTravelPilot(deps) {
     native: void 0,
     focus: void 0,
     offline: false
-  }, pollPromise, timer, busy = false, generation = 0;
+  }, pollPromise, observationAbort, timer, busy = false, generation = 0;
   const enabled = (action2, settings2) => action2.isKey() && settings2?.travelPilot === true;
   function currentPair() {
     return contextPair(frame, now());
@@ -21187,8 +21219,11 @@ function installTravelPilot(deps) {
       const native = now() - frame.observedAt <= MAX_FRAME_AGE && !frame.transitioning ? frame.native : void 0;
       const task = {
         ...projectTask(snapshot, native, now(), frame.offline),
-        projectName: resolveProject(snapshot)
+        projectName: resolveProject(snapshot),
+        opening: !!snapshot && frame.openingId === snapshot.id
       };
+      if (!frame.transitioning && !frame.offline && frame.selection && now() - frame.selection.at <= MAX_FRAME_AGE && frame.selection.threadId === frame.focus?.id && frame.selection.threadId === snapshot?.id)
+        task.active = true;
       if (notices.has(action2.id)) task.title = notices.get(action2.id);
       if (motionStatus(task.status))
         motionCards.set(action2.id, { action: action2, task, slot: index + 1 });
@@ -21244,14 +21279,17 @@ function installTravelPilot(deps) {
     }
     healthReason = reason;
   }
-  async function readControl(command2, id) {
+  async function readControl(command2, id, options) {
     try {
-      return await call(command2, id) || { ok: false, reason: "helper-unavailable" };
+      return await call(command2, id, void 0, void 0, options) || {
+        ok: false,
+        reason: "helper-unavailable"
+      };
     } catch {
       return { ok: false, reason: "helper-unavailable" };
     }
   }
-  async function poll() {
+  async function poll({ localOnly = false } = {}) {
     if (!visible.size) return;
     try {
       const sessions = store.sessions(8).map(withRequest), focus2 = withRequest(store.focusedThread());
@@ -21265,6 +21303,7 @@ function installTravelPilot(deps) {
         sessions,
         focus: focus2,
         request: focus2?.pendingRequest,
+        selection: frame.selection?.threadId === focus2?.id ? frame.selection : void 0,
         native: frame.native?.threadId === focus2?.id ? frame.native : void 0,
         offline: appOffline
       };
@@ -21282,7 +21321,7 @@ function installTravelPilot(deps) {
       await drawAll();
       return;
     }
-    if (busy) {
+    if (busy || localOnly) {
       await drawAll();
       return;
     }
@@ -21290,11 +21329,15 @@ function installTravelPilot(deps) {
       await drawAll();
       return pollPromise;
     }
-    const gen = generation, focus = frame.focus;
+    const gen = generation, focus = frame.focus, controller = new AbortController();
+    observationAbort = controller;
     nativeTarget = focus?.id;
     pollPromise = (async () => {
       await drawAll();
-      const native = await readControl("read", focus?.id || "");
+      if (controller.signal.aborted || gen !== generation) return;
+      const native = await readControl("read", focus?.id || "", {
+        signal: controller.signal
+      });
       if (gen !== generation || !dataAvailable || frame.focus?.id !== focus?.id)
         return;
       const observedAt = now();
@@ -21326,8 +21369,11 @@ function installTravelPilot(deps) {
       await drawAll();
       const externalVoice = voiceObserver?.();
       if ((!ui2?.voice || ui2.voice === "unknown") && (!externalVoice || externalVoice === "unknown") && now() - globalReadAt >= 4500) {
+        if (controller.signal.aborted || gen !== generation) return;
         globalReadAt = now();
-        const global = await readControl("globals", "current");
+        const global = await readControl("globals", "current", {
+          signal: controller.signal
+        });
         if (gen !== generation || !dataAvailable || frame.focus?.id !== focus?.id)
           return;
         if (global.ok && global.voice && global.voice !== "unknown") {
@@ -21342,11 +21388,13 @@ function installTravelPilot(deps) {
         await drawAll();
       }
     })().catch(() => {
+      if (gen !== generation || controller.signal.aborted) return;
       frame = { ...frame, native: void 0 };
       readCandidate = void 0;
       logger2.warn("Travel UI refresh failed");
     }).finally(() => {
       pollPromise = void 0;
+      if (observationAbort === controller) observationAbort = void 0;
     });
     return pollPromise;
   }
@@ -21358,36 +21406,69 @@ function installTravelPilot(deps) {
       void drawAll();
     }, 4500).unref?.();
   }
-  async function navigate(id) {
+  async function navigate(id, timing = {}) {
+    const startedAt = monotonicNow();
+    generation++;
+    frame.native = void 0;
+    frame.selection = void 0;
+    readCandidate = void 0;
+    observationAbort?.abort();
     if (pollPromise) await pollPromise;
-    const already = await readControl("confirm", id);
-    if (already.ok && already.threadId === id) return;
+    const navigationAt = monotonicNow();
+    timing.waitMs = navigationAt - startedAt;
     const opened = await readControl("navigate", id);
+    timing.navigationMs = monotonicNow() - navigationAt;
     if (!opened.ok || opened.threadId !== id || !opened.windowId)
       throw new Error("Task navigation was not confirmed");
+    frame.selection = { threadId: id, windowId: opened.windowId, at: now() };
+    appOffline = false;
+    nextNativeReadAt = 0;
+    return timing;
   }
   async function chooseTask(snapshot, action2) {
     if (busy) return;
+    const startedAt = monotonicNow();
+    let timing = {}, confirmedAt, success2 = false;
     busy = true;
     generation++;
     frame.transitioning = true;
+    frame.openingId = snapshot?.id;
+    frame.native = void 0;
+    frame.selection = void 0;
     pressed.clear();
-    await drawAll();
+    const feedback = drawAll().catch(
+      () => logger2.warn("Travel press feedback failed")
+    );
     try {
       if (snapshot) {
-        await navigate(snapshot.id);
+        await navigate(snapshot.id, timing);
+        confirmedAt = monotonicNow();
         ledger.record(snapshot, store);
       } else await openNewChat2(store.latestThread()?.cwd);
       store.invalidate();
-    } catch (error40) {
+      success2 = true;
+    } catch {
       await notice(action2, "OPEN CODEX");
-      logger2.warn(`Travel pilot task selection failed: ${String(error40)}`);
+      logger2.warn("Travel pilot task selection failed");
     } finally {
       generation++;
       frame.transitioning = false;
-      busy = false;
-      if (pollPromise) await pollPromise;
-      await poll();
+      frame.openingId = void 0;
+      try {
+        await feedback;
+        await poll({ localOnly: true });
+      } catch {
+        logger2.warn("Travel confirmed display refresh failed");
+      } finally {
+        busy = false;
+      }
+      const displayedAt = monotonicNow();
+      logger2.info(
+        "Travel navigation timing: outcome=" + (success2 ? "confirmed" : "failed") + " waitMs=" + Math.round(timing?.waitMs || 0) + " navigationMs=" + Math.round(timing?.navigationMs || 0) + " displayMs=" + Math.round(
+          confirmedAt === void 0 ? 0 : displayedAt - confirmedAt
+        ) + " totalMs=" + Math.round(displayedAt - startedAt)
+      );
+      void poll().catch(() => logger2.warn("Travel background refresh failed"));
     }
   }
   async function utilityDown(event) {
@@ -21626,6 +21707,8 @@ function installTravelPilot(deps) {
       clearInterval(timer);
       clearInterval(animationTimer);
       timer = void 0;
+      generation++;
+      observationAbort?.abort();
       pressed.clear();
       utilityPresses.clear();
       if (dictation)
@@ -21660,7 +21743,7 @@ function installTravelPilot(deps) {
 // src/custom/travel-voice.mjs
 init_define_STREAMDECK_CODEX_BUILD();
 import { execFile as execFile4 } from "node:child_process";
-import { promisify as promisify4 } from "node:util";
+import { promisify as promisify3 } from "node:util";
 import { fileURLToPath as fileURLToPath4 } from "node:url";
 import { readFileSync as readFileSync7 } from "node:fs";
 
@@ -21668,8 +21751,8 @@ import { readFileSync as readFileSync7 } from "node:fs";
 init_define_STREAMDECK_CODEX_BUILD();
 import { readFileSync as readFileSync6 } from "node:fs";
 import { execFile as execFile3 } from "node:child_process";
-import { promisify as promisify3 } from "node:util";
-var run2 = promisify3(execFile3);
+import { promisify as promisify2 } from "node:util";
+var run2 = promisify2(execFile3);
 var icons2 = JSON.parse(
   readFileSync6(new URL("./icons.json", import.meta.url), "utf8")
 );
@@ -21792,7 +21875,7 @@ function installTravelMore({
 }
 
 // src/custom/travel-voice.mjs
-var run3 = promisify4(execFile4);
+var run3 = promisify3(execFile4);
 var helper = fileURLToPath4(new URL("./voice-control", import.meta.url));
 var icons3 = JSON.parse(
   readFileSync7(new URL("./icons.json", import.meta.url))
@@ -22115,7 +22198,7 @@ function installTravelVoice({
 // src/custom/plus-v2.mjs
 init_define_STREAMDECK_CODEX_BUILD();
 import { execFile as execFile5 } from "node:child_process";
-import { promisify as promisify5 } from "node:util";
+import { promisify as promisify4 } from "node:util";
 import { fileURLToPath as fileURLToPath5 } from "node:url";
 
 // src/custom/plus-v2-visuals.mjs
@@ -22308,7 +22391,7 @@ function stripSvg(column, {
 }
 
 // src/custom/plus-v2.mjs
-var run4 = promisify5(execFile5);
+var run4 = promisify4(execFile5);
 var PROFILE = "streamdex-plus";
 var clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 function touchSide(payload) {

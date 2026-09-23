@@ -10,6 +10,7 @@ describe("production helper boundaries", () => {
     "approval-cycle",
     "--composer-read-fixture",
     "--model-fixture",
+    "--log-discovery-fixture",
     "unknown-command",
   ])("rejects %s before accessing Codex or Accessibility", (command) => {
     const result = spawnSync(resolve(bin, "codex-ui-control"), [command], {

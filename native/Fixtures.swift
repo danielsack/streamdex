@@ -1956,6 +1956,20 @@ func runFixtureAction(_ action: String, arguments: [String]) {
         )
     }
 
+    if action == "--log-discovery-fixture" {
+        struct Request: Decodable { let directories: [String]; let expected: [String]; let expectedReads: Int }
+        guard let request = decodeNativePayload(arguments.dropFirst().first ?? "", as: Request.self) else {
+            emit(ControlResult(ok: false, action: action, requested: nil, model: nil, effort: nil, message: "malformed discovery fixture"), exitCode: 1)
+        }
+        var metadataReads = 0
+        let selected = desktopLogFiles(in: request.directories.map { URL(fileURLWithPath: $0) }) { url in
+            metadataReads += 1
+            return logModificationTime(url)
+        }
+        let valid = selected.map(canonicalPath) == request.expected.map(canonicalPath) && metadataReads == request.expectedReads
+        emit(ControlResult(ok: valid, action: action, requested: nil, model: nil, effort: nil, message: "metadataReads=\(metadataReads)"), exitCode: valid ? 0 : 1)
+    }
+
     if action == "--multi-log-fixture" {
         let payload = arguments.dropFirst().first ?? ""
         guard let request = decodeNativePayload(payload, as: MultiLogFixtureRequest.self),

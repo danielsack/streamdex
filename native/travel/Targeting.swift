@@ -23,22 +23,37 @@ func desktopLogFiles() -> [String] {
     formatter.locale = Locale(identifier: "en_US_POSIX")
     formatter.timeZone = TimeZone(secondsFromGMT: 0)
     formatter.dateFormat = "yyyy/MM/dd"
+    return desktopLogFiles(in: [Date(), Date(timeIntervalSinceNow: -86_400)].map {
+        root.appendingPathComponent(formatter.string(from: $0))
+    })
+}
+
+func logModificationTime(_ url: URL) -> TimeInterval? {
+    var info = stat()
+    guard url.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &info, 0) }) == 0 else { return nil }
+    return TimeInterval(info.st_mtimespec.tv_sec) + TimeInterval(info.st_mtimespec.tv_nsec) / 1_000_000_000
+}
+
+func desktopLogFiles(
+    in directories: [URL],
+    modifiedAt: (URL) -> TimeInterval? = logModificationTime
+) -> [String] {
     let manager = FileManager.default
-    return [Date(), Date(timeIntervalSinceNow: -86_400)].flatMap { date in
-        let directory = root.appendingPathComponent(formatter.string(from: date))
-        return (try? manager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey]
-        )) ?? []
+    let candidates = directories.flatMap { directory in
+        (try? manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+    }.filter { $0.pathExtension == "log" }
+    // File metadata must be captured once per candidate, never inside the
+    // sort comparator. Busy installations can create thousands of logs a day.
+    var ranked: [(url: URL, modifiedAt: TimeInterval, index: Int)] = candidates.enumerated().map { index, url in
+        (url: url, modifiedAt: modifiedAt(url) ?? -Double.infinity, index: index)
     }
-    .filter { $0.pathExtension == "log" }
-    .sorted {
-        let left = try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
-        let right = try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
-        return (left ?? .distantPast) > (right ?? .distantPast)
+    ranked.sort { left, right in
+        left.modifiedAt == right.modifiedAt
+            ? left.index < right.index
+            : left.modifiedAt > right.modifiedAt
     }
-    .prefix(8).map {
-        $0.standardized.resolvingSymlinksInPath().path
+    return ranked.prefix(8).map {
+        $0.url.standardized.resolvingSymlinksInPath().path
     }
 }
 
@@ -91,10 +106,12 @@ func databaseProvenance(_ path: String) -> DatabaseProvenance? {
     return DatabaseProvenance(identity: identity, creationDate: values.creationDate)
 }
 
+private let witnessMarker = Data("thread_stream_view_activity_changed".utf8)
+
 func witness(in text: String) -> DesktopWitness? {
     for line in text.split(separator: "\n").reversed() {
         let value = String(line)
-        guard value.contains("thread_stream_view_activity_changed"),
+        guard Data(value.utf8).range(of: witnessMarker) != nil,
               value.contains("active=true"),
               value.contains("rendererWindowAppearance=primary"),
               value.contains("rendererWindowFocused=true")
@@ -130,9 +147,7 @@ func latestWitness(in data: Data) -> DesktopWitness? {
 // Eight logs at this cap remain within the 128 MiB observer read budget.
 let maximumWitnessReadBytes: UInt64 = 16 * 1024 * 1024
 
-func witnessTimestamp(_ line: String, fallback: TimeInterval) -> TimeInterval {
-    let formatter = ISO8601DateFormatter()
-    formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+func witnessTimestamp(_ line: String, fallback: TimeInterval, formatter: ISO8601DateFormatter) -> TimeInterval {
     let first = line.split(separator: " ").first.map(String.init)
     let field = line.split(separator: " ").first(where: { $0.hasPrefix("timestamp=") })
         .map { String($0.dropFirst("timestamp=".count)) }
@@ -157,23 +172,29 @@ func witnessEvents(path: String, snapshot: DesktopLogSnapshot, from offset: UInt
               let completedSnapshot = unscopedLogSnapshot(path),
               completedSnapshot.identity == initialSnapshot.identity,
               completedSnapshot.size >= initialSnapshot.size,
-              let text = String(data: data, encoding: .utf8)
+              String(data: data, encoding: .utf8) != nil
         else { return nil }
         var byteCursor = offset
-        let lines = text.split(separator: "\n", omittingEmptySubsequences: false)
+        // Split and reject unrelated lines as bytes. Log markers are ASCII;
+        // expensive Unicode searches are reserved for actual focus events.
+        let lines = data.split(separator: UInt8(10), omittingEmptySubsequences: false)
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
         return lines.enumerated().compactMap { index, line in
-            let lineText = String(line)
-            let separatorBytes = index < lines.count - 1 || data.last == 10 ? 1 : 0
-            let end = byteCursor + UInt64(lineText.lengthOfBytes(using: .utf8) + separatorBytes)
+            let separatorBytes = index < lines.count - 1 ? 1 : 0
+            let end = byteCursor + UInt64(line.count + separatorBytes)
             defer { byteCursor = end }
-            guard var event = witness(in: lineText) else { return nil }
+            guard line.range(of: witnessMarker) != nil,
+                  let lineText = String(data: line, encoding: .utf8),
+                  var event = witness(in: lineText)
+            else { return nil }
             event = DesktopWitness(
                 conversationId: event.conversationId,
                 rendererWindowId: event.rendererWindowId,
                 path: path,
                 cursor: end,
                 fileIdentity: initialSnapshot.identity,
-                observedAt: witnessTimestamp(lineText, fallback: initialSnapshot.modifiedAt),
+                observedAt: witnessTimestamp(lineText, fallback: initialSnapshot.modifiedAt, formatter: formatter),
                 fileModifiedAt: initialSnapshot.modifiedAt
             )
             return event

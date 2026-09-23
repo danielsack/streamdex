@@ -102,7 +102,13 @@ do {
     if command == "navigate" {
         guard UUID(uuidString: threadId) != nil else { output(["ok":false,"reason":"arguments"],code:1) }
         AXUIElementSetMessagingTimeout(appElement, 0.25)
-        let target = try focusCodex(app, appElement:appElement, threadId:threadId, navigationOnly:true)
+        let target: TargetContext
+        if let current = try? captureCurrentCodex(app, appElement:appElement, threadId:threadId),
+           (try? verifyCurrentTarget(app, appElement:appElement, token:encodeWitnessToken(current.witness))) != nil {
+            target = current
+        } else {
+            target = try focusCodex(app, appElement:appElement, threadId:threadId, navigationOnly:true)
+        }
         // No control tokens: this result authorizes read acknowledgement only.
         output(["ok":true,"appRunning":true,"threadId":threadId,"windowId":target.witness.rendererWindowId])
     }

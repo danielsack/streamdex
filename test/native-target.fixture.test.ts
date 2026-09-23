@@ -1,13 +1,18 @@
 import { rmSync as removeFixture } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-const native = resolve(
-  ".build/test-bin/codex-ui-control",
-);
+const native = resolve(".build/test-bin/codex-ui-control");
 const temporaryRoots: string[] = [];
 
 afterEach(() => {
@@ -104,6 +109,90 @@ function evaluate(
 }
 
 describe("native exact-target fixture", () => {
+  it("discovers the newest logs with one metadata read per candidate and observes later file changes", () => {
+    const root = mkdtempSync(join(tmpdir(), "streamdex-log-discovery-"));
+    temporaryRoots.push(root);
+    const directories = [join(root, "day-a"), join(root, "day-b")];
+    for (const directory of directories) mkdirSync(directory);
+    const files = Array.from({ length: 2000 }, (_, i) => {
+      const path = join(directories[i % 2]!, `fixture-${i}.log`);
+      writeFileSync(path, "");
+      const time = new Date(1800000000000 + i * 1000);
+      utimesSync(path, time, time);
+      return path;
+    });
+    writeFileSync(join(directories[0]!, "ignore.txt"), "fictional");
+    function check(expected: string[], reads: number) {
+      const payload = Buffer.from(
+        JSON.stringify({
+          directories,
+          expected: expected.map((path) => realpathSync(path)),
+          expectedReads: reads,
+        }),
+      ).toString("base64");
+      const result = spawnSync(native, ["--log-discovery-fixture", payload], {
+        encoding: "utf8",
+        timeout: 5000,
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+    }
+    check(files.slice(-8).reverse(), 2000);
+    // A newly created log must be discovered without any persistent cache.
+    const added = join(directories[1]!, "new.log");
+    writeFileSync(added, "fictional event");
+    const latest = new Date(1800005000000);
+    utimesSync(added, latest, latest);
+    check([added, ...files.slice(-7).reverse()], 2001);
+    // An old file receiving new activity must become the newest immediately.
+    const changed = new Date(1800005001000);
+    utimesSync(files[0]!, changed, changed);
+    check([files[0]!, added, ...files.slice(-6).reverse()], 2001);
+  });
+
+  it("ignores large Unicode log output while retaining the latest complete focus event", () => {
+    const noise =
+      "2026-01-01 INFO fictional événement 🌱 漢字 progress=" +
+      "sample ".repeat(20) +
+      "\n";
+    const content =
+      noise.repeat(20000) +
+      activity("task-a", "window-a") +
+      "\n" +
+      noise.repeat(1000) +
+      activity("task-b", "window-b", "2026-07-26T04:03:00.000Z");
+    expect(evaluateMulti([{ name: "unicode.log", content }], "task-b")).toBe(0);
+    expect(evaluateMulti([{ name: "unicode.log", content }], "task-a")).toBe(1);
+  });
+
+  it("keeps byte offsets and intervening focus changes intact after multibyte output", () => {
+    const prefix = "Fictional événement 🌱 漢字\n";
+    const content = prefix + activity("task-a", "window-a") + "\n";
+    const offset = Buffer.byteLength(prefix, "utf8");
+    expect(
+      evaluateMulti([{ name: "unicode.log", content }], "task-a", {
+        offsets: { "unicode.log": offset },
+      }),
+    ).toBe(0);
+    const diverted =
+      content +
+      activity("task-b", "window-b") +
+      "\n" +
+      activity("task-a", "window-a");
+    expect(
+      evaluateMulti([{ name: "unicode.log", content: diverted }], "task-a", {
+        offsets: { "unicode.log": offset },
+      }),
+    ).toBe(1);
+    // Starting inside an emoji cannot turn a malformed fragment into proof.
+    const insideEmoji = Buffer.byteLength("Fictional événement ", "utf8") + 1;
+    expect(
+      evaluateMulti([{ name: "unicode.log", content }], "task-a", {
+        offsets: { "unicode.log": insideEmoji },
+      }),
+    ).toBe(1);
+  });
+
   it("arbitrates the newest focused-primary event globally across separate logs", () => {
     expect(
       evaluateMulti(

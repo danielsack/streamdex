@@ -3,11 +3,11 @@
   "files": {
     "io.streamdex.plugin.sdPlugin/LICENSE.txt": "d8f5d890043937ea0dd49267f8d0eaba07e6fd0ca388c4c4e969577b7ba33abc",
     "io.streamdex.plugin.sdPlugin/THIRD_PARTY_LICENSES.txt": "26685348ab9e61550870c1975d003a3fb14470df2bca7a87bc02b6c4737ece7f",
-    "io.streamdex.plugin.sdPlugin/bin/codex-ui-control": "d46a95f4b1cd7963a63233c91d9eb4089d8ffd693ffc9714810163c5f70d798e",
+    "io.streamdex.plugin.sdPlugin/bin/codex-ui-control": "751534354eecf44560061891a66142dd365a1fa5092e9020e2b7aa5cc204609b",
     "io.streamdex.plugin.sdPlugin/bin/font-metrics.json": "00d1caf3d6b0634f47792426b168ccee2e6a771b287f66bdd47f2064cce832e1",
     "io.streamdex.plugin.sdPlugin/bin/icons.json": "23d7a008044164c19a8d4a0dbe3da2ce75807d221828ffcc7b2b32b27ada9155",
-    "io.streamdex.plugin.sdPlugin/bin/plugin.js": "b82d267882a7678314d413da7c7c9523ccf9a68b317801812f8d9d744b0017b0",
-    "io.streamdex.plugin.sdPlugin/bin/travel-ui-control": "5cbf99db24632978f5f7f145ee598ee38166738dfac5b7888d67d0ef52097a97",
+    "io.streamdex.plugin.sdPlugin/bin/plugin.js": "3aa0a84ee555ad0b49e46d48cd6f7190fb0807424e4207f92e973eb9a10b92cc",
+    "io.streamdex.plugin.sdPlugin/bin/travel-ui-control": "7aaca36983b56b9edf5c75fa7c60ea5bb0431e95394dbeb754e0a43adb451402",
     "io.streamdex.plugin.sdPlugin/bin/voice-control": "705d6516e7b9cf6f9e0795dd4c5c7bcf4dd92f946336dc28f797ae504af2e162",
     "io.streamdex.plugin.sdPlugin/imgs/actions/agent.svg": "9f32b454e4c539dde0bd4358fd53ba24fd02b40e522b33a8cd1052df1280ac90",
     "io.streamdex.plugin.sdPlugin/imgs/actions/command.svg": "91d33cb09f44f214dfe88744b32223506085a99a29206b4588e67c003547b418",
@@ -21,7 +21,7 @@
     "io.streamdex.plugin.sdPlugin/scripts/ptt-guard.mjs": "0294191bbb3634ae2ff106aed7d28193e31c077ef354ce78dfc522ca96e95399",
     "io.streamdex.plugin.sdPlugin/streamdex-mobile.streamDeckProfile": "043b955dfe075519bed539dbb446c1410d8ee87cfe45b8fc61f874d610ff1a3d",
     "io.streamdex.plugin.sdPlugin/streamdex-plus.streamDeckProfile": "13a0f82575c3ec73b5c4882bc1829c7465fecb3a3b83f45248f07e9b7efb69f9",
-    "io.streamdex.plugin.streamDeckPlugin": "9cae7a3457236c0006657c16f61d33fe76d1afa95412ebfdb8c0ac86bb7fe2d9",
+    "io.streamdex.plugin.streamDeckPlugin": "931c6f081793dd653086aba4ed94e9ba6c38f1d69680ee1bb0afe8f8e54193f5",
     "streamdex-setup": "46d6a94470218ed491903866fecf22005ec77c65e6929547d5a320763613fd7b"
   }
 }
