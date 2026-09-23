@@ -88,7 +88,7 @@ func voiceState(_ snapshot: AXSnapshot) -> String {
 let args = Array(CommandLine.arguments.dropFirst())
 guard args.count >= 2 else { output(["ok":false,"reason":"arguments"],code:1) }
 let command = args[0]
-guard Set(["globals", "confirm", "read", "inspect", "act"]).contains(command) else {
+guard Set(["globals", "confirm", "navigate", "read", "inspect", "act"]).contains(command) else {
     output(["ok":false,"reason":"unsupported-command"],code:1)
 }
 let threadId = command == "inspect" && args[1] == "current" ? (globallyCurrentWitness(in: desktopLogFiles(), scoped: true)?.conversationId ?? "") : args[1]
@@ -99,6 +99,13 @@ do {
     let app = try runningCodex(); appRunning = true
     guard AXIsProcessTrusted() else { output(["ok":false,"reason":"accessibility","appRunning":true],code:1) }
     let appElement = AXUIElementCreateApplication(app.processIdentifier)
+    if command == "navigate" {
+        guard UUID(uuidString: threadId) != nil else { output(["ok":false,"reason":"arguments"],code:1) }
+        AXUIElementSetMessagingTimeout(appElement, 0.25)
+        let target = try focusCodex(app, appElement:appElement, threadId:threadId, navigationOnly:true)
+        // No control tokens: this result authorizes read acknowledgement only.
+        output(["ok":true,"appRunning":true,"threadId":threadId,"windowId":target.witness.rendererWindowId])
+    }
     if command == "globals" {
         let windows = attribute(appElement,kAXWindowsAttribute as CFString) as? [AXUIElement] ?? []
         let snapshots = windows.prefix(4).map { captureAXSnapshot($0, maximumDepth: maximumCodexWindowTraversalDepth) }

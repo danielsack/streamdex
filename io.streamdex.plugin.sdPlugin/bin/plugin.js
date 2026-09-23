@@ -21070,7 +21070,7 @@ async function nativeCall(command2, id, operation, token) {
     const { stdout } = await exec(
       helper2,
       [command2, id, ...operation ? [operation, token] : []],
-      { timeout: 3500, maxBuffer: 256 * 1024 }
+      { timeout: command2 === "navigate" ? 6500 : 3500, maxBuffer: 256 * 1024 }
     );
     return JSON.parse(stdout);
   } catch (error40) {
@@ -21282,6 +21282,10 @@ function installTravelPilot(deps) {
       await drawAll();
       return;
     }
+    if (busy) {
+      await drawAll();
+      return;
+    }
     if (pollPromise || nativeTarget === frame.focus?.id && now() < nextNativeReadAt) {
       await drawAll();
       return pollPromise;
@@ -21355,15 +21359,12 @@ function installTravelPilot(deps) {
     }, 4500).unref?.();
   }
   async function navigate(id) {
-    const already = await call("confirm", id);
+    if (pollPromise) await pollPromise;
+    const already = await readControl("confirm", id);
     if (already.ok && already.threadId === id) return;
-    try {
-      await openThread2(id);
-    } catch (error40) {
-      const current = await call("confirm", id);
-      if (!current.ok || current.threadId !== id) throw error40;
-      logger2.info("Travel task navigation confirmed from current task/window");
-    }
+    const opened = await readControl("navigate", id);
+    if (!opened.ok || opened.threadId !== id || !opened.windowId)
+      throw new Error("Task navigation was not confirmed");
   }
   async function chooseTask(snapshot, action2) {
     if (busy) return;

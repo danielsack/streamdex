@@ -636,7 +636,7 @@ func verifyCurrentTarget(
     _ = try uniqueFocusedCodexWindow(appElement)
 }
 
-func focusCodex(_ app: NSRunningApplication, appElement: AXUIElement, threadId: String?) throws -> TargetContext {
+func focusCodex(_ app: NSRunningApplication, appElement: AXUIElement, threadId: String?, navigationOnly: Bool = false) throws -> TargetContext {
     guard let threadId else {
         throw ControlError.failed("A focused Codex task ID is required for mutation.")
     }
@@ -653,6 +653,13 @@ func focusCodex(_ app: NSRunningApplication, appElement: AXUIElement, threadId: 
         freshWitness(threadId: threadId, after: cursor)
     }) else {
         throw ControlError.failed("Codex emitted no fresh focused task/window witness after navigation.")
+    }
+    if navigationOnly {
+        // Opening a task does not require locating its composer or inspecting
+        // conversation controls. Verify current task/window identity only.
+        try verifyCurrentTarget(app, appElement: appElement, token: encodeWitnessToken(focusedWitness))
+        let window = try uniqueFocusedCodexWindow(appElement)
+        return TargetContext(window: window, witness: focusedWitness)
     }
     let window = try verifyTarget(app, appElement: appElement, witness: focusedWitness)
     return TargetContext(window: window, witness: focusedWitness)

@@ -229,7 +229,7 @@ async function nativeCall(command, id, operation, token) {
     const { stdout } = await exec(
       helper,
       [command, id, ...(operation ? [operation, token] : [])],
-      { timeout: 3500, maxBuffer: 256 * 1024 },
+      { timeout: command === "navigate" ? 6500 : 3500, maxBuffer: 256 * 1024 },
     );
     return JSON.parse(stdout);
   } catch (error) {
@@ -500,6 +500,12 @@ export function installTravelPilot(deps) {
       await drawAll();
       return;
     }
+    // A key press has priority over background Accessibility observation.
+    // Local cards may refresh, but no new helper competes with navigation.
+    if (busy) {
+      await drawAll();
+      return;
+    }
     // Refresh local data even while an earlier native read is still in flight.
     if (
       pollPromise ||
@@ -600,15 +606,14 @@ export function installTravelPilot(deps) {
     }, 4500).unref?.();
   }
   async function navigate(id) {
-    const already = await call("confirm", id);
+    // Drain the existing read before opening a task. Its stale result is
+    // discarded by the generation check while selection is in progress.
+    if (pollPromise) await pollPromise;
+    const already = await readControl("confirm", id);
     if (already.ok && already.threadId === id) return;
-    try {
-      await openThread(id);
-    } catch (error) {
-      const current = await call("confirm", id);
-      if (!current.ok || current.threadId !== id) throw error;
-      logger.info("Travel task navigation confirmed from current task/window");
-    }
+    const opened = await readControl("navigate", id);
+    if (!opened.ok || opened.threadId !== id || !opened.windowId)
+      throw new Error("Task navigation was not confirmed");
   }
   async function chooseTask(snapshot, action) {
     if (busy) return;

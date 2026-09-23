@@ -162,6 +162,7 @@
     "test/context.test.ts",
     "test/custom/controls.test.mjs",
     "test/custom/installer.test.mjs",
+    "test/custom/navigation.test.mjs",
     "test/custom/polling.test.mjs",
     "test/custom/profiles.test.mjs",
     "test/dial-event-path.test.ts",
