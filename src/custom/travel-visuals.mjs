@@ -122,8 +122,15 @@ export function taskSvg(task, slot, time = 0) {
       txt(slot, 22.5, 28, 18, BG);
   else s += txt(slot, 15, 28, 18, M, "start");
   if (["running", "thinking"].includes(task.status))
-    s += runningGlyph(color, time);
-  s += txt(names[task.status] || "UNKNOWN", 129, 28, 18, color, "end");
+    s += task.optionalQuestion
+      ? `<g transform="translate(-16 0)">${runningGlyph(color, time)}</g>`
+      : runningGlyph(color, time);
+  const label = task.optionalQuestion
+    ? ["running", "thinking"].includes(task.status)
+      ? "RUN ?"
+      : "ASK"
+    : names[task.status] || "UNKNOWN";
+  s += txt(label, 129, 28, 18, color, "end");
   const ts = lines(task.title);
   s += ts
     .map((v, i) => txt(v, 72, ts.length === 1 ? 79 : 64 + i * 28))
