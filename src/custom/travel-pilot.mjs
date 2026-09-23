@@ -238,8 +238,10 @@ async function nativeCall(command, id, operation, token) {
     } catch {
       return {
         ok: false,
-        reason: "helper-unavailable",
-        message: String(error),
+        reason:
+          error.killed || error.code === "ETIMEDOUT"
+            ? "helper-timeout"
+            : "helper-unavailable",
       };
     }
   }
@@ -422,74 +424,171 @@ export function installTravelPilot(deps) {
       animating = false;
     }
   }
+  // Task data and UI-control availability are independent. A slow AX read must
+  // not blank fresh local task statuses or extend the lifetime of an action.
+  let dataAvailable = false,
+    appOffline = false,
+    nextNativeReadAt = 0;
+  let nativeTarget,
+    globalReadAt = -Infinity,
+    healthReason,
+    healthLoggedAt = -Infinity;
+  function controlHealth(native) {
+    const reason = native.ok
+      ? "ready"
+      : [
+            "helper-timeout",
+            "helper-unavailable",
+            "no-focus",
+            "accessibility",
+            "offline",
+            "control-failed",
+          ].includes(native.reason)
+        ? native.reason
+        : "unverified";
+    if (reason !== healthReason || now() - healthLoggedAt >= 60000) {
+      if (reason !== "ready")
+        logger.warn(
+          "Travel UI controls unavailable: " +
+            reason +
+            "; task status uses local data",
+        );
+      else if (healthReason && healthReason !== "ready")
+        logger.info("Travel UI controls recovered");
+      healthLoggedAt = now();
+    }
+    healthReason = reason;
+  }
+  async function readControl(command, id) {
+    try {
+      return (
+        (await call(command, id)) || { ok: false, reason: "helper-unavailable" }
+      );
+    } catch {
+      return { ok: false, reason: "helper-unavailable" };
+    }
+  }
   async function poll() {
-    if (pollPromise) return pollPromise;
     if (!visible.size) return;
-    const gen = generation;
+    try {
+      const sessions = store.sessions(8).map(withRequest),
+        focus = withRequest(store.focusedThread());
+      if (frame.focus?.id !== focus?.id) {
+        generation++;
+        readCandidate = undefined;
+        nextNativeReadAt = 0;
+      }
+      frame = {
+        ...frame,
+        sessions,
+        focus,
+        request: focus?.pendingRequest,
+        native: frame.native?.threadId === focus?.id ? frame.native : undefined,
+        offline: appOffline,
+      };
+      if (!dataAvailable && healthReason === "data-unavailable")
+        logger.info("Travel task data recovered");
+      dataAvailable = true;
+    } catch {
+      if (dataAvailable) generation++;
+      dataAvailable = false;
+      readCandidate = undefined;
+      frame = { ...frame, native: undefined, offline: true };
+      if (healthReason !== "data-unavailable")
+        logger.warn("Travel task data unavailable");
+      healthReason = "data-unavailable";
+      await drawAll();
+      return;
+    }
+    // Refresh local data even while an earlier native read is still in flight.
+    if (
+      pollPromise ||
+      (nativeTarget === frame.focus?.id && now() < nextNativeReadAt)
+    ) {
+      await drawAll();
+      return pollPromise;
+    }
+    const gen = generation,
+      focus = frame.focus;
+    nativeTarget = focus?.id;
     pollPromise = (async () => {
-      try {
-        const sessions = store.sessions(8).map(withRequest),
-          focus = withRequest(store.focusedThread());
-        const native = await call("read", focus?.id || "");
-        let ui = native.ui;
-        if (!ui?.voice || ui.voice === "unknown") {
-          const global = await call("globals", "current");
-          if (global.ok) ui = { ...ui, voice: global.voice };
-        }
-        if (gen !== generation) return;
-        if (ui?.voice) {
-          voice = ui.voice;
-          voiceAt = now();
-        }
-        for (const kind of ["fast", "plan"])
-          if (
-            native.ok &&
-            native.threadId === focus?.id &&
-            typeof ui?.[kind] === "boolean"
-          )
-            modes.set(focus.id + ":" + kind, { active: ui[kind], at: now() });
-        if (gen !== generation) return;
-        frame = {
-          ...frame,
-          sessions,
-          focus,
-          native,
-          observedAt: now(),
-          request: focus?.pendingRequest,
-          offline:
-            native.appRunning === false ||
-            native.reason === "helper-unavailable",
-        };
-        // Persist only a completed response actually viewed in the verified foreground task.
+      await drawAll();
+      const native = await readControl("read", focus?.id || "");
+      if (gen !== generation || !dataAvailable || frame.focus?.id !== focus?.id)
+        return;
+      const observedAt = now();
+      if (typeof native.appRunning === "boolean")
+        appOffline = !native.appRunning;
+      controlHealth(native);
+      nextNativeReadAt = native.ok ? 0 : now() + 3000;
+      let ui = native.ui;
+      if (ui?.voice && ui.voice !== "unknown") {
+        voice = ui.voice;
+        voiceAt = now();
+      }
+      for (const kind of ["fast", "plan"]) {
         if (
           native.ok &&
           native.threadId === focus?.id &&
-          native.kind === "idle" &&
-          focus.status === "unread" &&
-          focus.completedAt > 0
-        ) {
-          const key = focus.id + ":" + focus.completedAt;
-          if (readCandidate?.key === key && now() - readCandidate.at >= 2000) {
-            ledger.record(focus, store);
-            frame.sessions = store.sessions(8).map(withRequest);
-            frame.focus = withRequest(store.focusedThread());
-            frame.request = frame.focus?.pendingRequest;
-          } else if (readCandidate?.key !== key)
-            readCandidate = { key, at: now() };
-        } else readCandidate = undefined;
-      } catch (error) {
-        frame = {
-          ...frame,
-          native: undefined,
-          observedAt: now(),
-          offline: true,
-        };
-        logger.warn("Travel pilot status source unavailable");
+          typeof ui?.[kind] === "boolean"
+        )
+          modes.set(focus.id + ":" + kind, { active: ui[kind], at: now() });
       }
+      // Failure replaces the previous native observation, revoking its tokens.
+      frame = { ...frame, native, observedAt, offline: appOffline };
+      const current = frame.focus;
+      if (
+        native.ok &&
+        native.threadId === current?.id &&
+        native.kind === "idle" &&
+        current?.status === "unread" &&
+        current.completedAt > 0
+      ) {
+        const key = current.id + ":" + current.completedAt;
+        if (readCandidate?.key === key && now() - readCandidate.at >= 2000) {
+          ledger.record(current, store);
+          frame.sessions = store.sessions(8).map(withRequest);
+          frame.focus = withRequest(store.focusedThread());
+          frame.request = frame.focus?.pendingRequest;
+        } else if (readCandidate?.key !== key)
+          readCandidate = { key, at: now() };
+      } else readCandidate = undefined;
       await drawAll();
-    })().finally(() => {
-      pollPromise = undefined;
-    });
+      const externalVoice = voiceObserver?.();
+      if (
+        (!ui?.voice || ui.voice === "unknown") &&
+        (!externalVoice || externalVoice === "unknown") &&
+        now() - globalReadAt >= 4500
+      ) {
+        globalReadAt = now();
+        const global = await readControl("globals", "current");
+        if (
+          gen !== generation ||
+          !dataAvailable ||
+          frame.focus?.id !== focus?.id
+        )
+          return;
+        if (global.ok && global.voice && global.voice !== "unknown") {
+          voice = global.voice;
+          voiceAt = now();
+        }
+        if (typeof global.appRunning === "boolean") {
+          appOffline = !global.appRunning;
+          frame = { ...frame, offline: appOffline };
+          if (appOffline) frame.native = undefined;
+        }
+        await drawAll();
+      }
+    })()
+      .catch(() => {
+        // Rendering/ledger failures are not evidence that Codex went offline.
+        frame = { ...frame, native: undefined };
+        readCandidate = undefined;
+        logger.warn("Travel UI refresh failed");
+      })
+      .finally(() => {
+        pollPromise = undefined;
+      });
     return pollPromise;
   }
   async function notice(action, text) {
