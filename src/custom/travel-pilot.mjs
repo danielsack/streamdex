@@ -1,5 +1,4 @@
-import { execFile } from "node:child_process";
-import { promisify } from "node:util";
+import { createNativeCaller } from "./travel-native.mjs";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import { createRequestReader } from "./travel-requests.mjs";
@@ -10,7 +9,6 @@ import { MOTION_INTERVAL_MS, motionStatus } from "./task-motion.mjs";
 export { taskSvg, controlSvg, utilitySvg } from "./travel-visuals.mjs";
 import { createReadLedger, createProjectResolver } from "./travel-state.mjs";
 import { join } from "node:path";
-const exec = promisify(execFile);
 const STALE_MS = 30 * 60 * 1000;
 const HOLD_MS = 800;
 const MAX_FRAME_AGE = 5500;
@@ -223,29 +221,9 @@ export function sameGesture(start, current, now = Date.now()) {
   return !a.hold || now - start.at >= HOLD_MS;
 }
 
-async function nativeCall(command, id, operation, token) {
-  const helper = fileURLToPath(new URL("./travel-ui-control", import.meta.url));
-  try {
-    const { stdout } = await exec(
-      helper,
-      [command, id, ...(operation ? [operation, token] : [])],
-      { timeout: command === "navigate" ? 6500 : 3500, maxBuffer: 256 * 1024 },
-    );
-    return JSON.parse(stdout);
-  } catch (error) {
-    try {
-      return JSON.parse(error.stdout);
-    } catch {
-      return {
-        ok: false,
-        reason:
-          error.killed || error.code === "ETIMEDOUT"
-            ? "helper-timeout"
-            : "helper-unavailable",
-      };
-    }
-  }
-}
+const nativeCall = createNativeCaller(
+  fileURLToPath(new URL("./travel-ui-control", import.meta.url)),
+);
 
 export function installTravelPilot(deps) {
   const {
@@ -263,6 +241,7 @@ export function installTravelPilot(deps) {
   const settingsTargets = deps.settingsTargets ?? {};
   const call = deps.nativeCall || nativeCall,
     now = deps.now || Date.now;
+  const monotonicNow = deps.monotonicNow || (() => performance.now());
   const ledger =
     deps.readLedger ||
     createReadLedger(deps.readStatePath ?? undefined, logger);
@@ -304,6 +283,7 @@ export function installTravelPilot(deps) {
       offline: false,
     },
     pollPromise,
+    observationAbort,
     timer,
     busy = false,
     generation = 0;
@@ -388,7 +368,18 @@ export function installTravelPilot(deps) {
       const task = {
         ...projectTask(snapshot, native, now(), frame.offline),
         projectName: resolveProject(snapshot),
+        opening: !!snapshot && frame.openingId === snapshot.id,
       };
+      // Navigation proves selection, not the availability of action controls.
+      if (
+        !frame.transitioning &&
+        !frame.offline &&
+        frame.selection &&
+        now() - frame.selection.at <= MAX_FRAME_AGE &&
+        frame.selection.threadId === frame.focus?.id &&
+        frame.selection.threadId === snapshot?.id
+      )
+        task.active = true;
       if (notices.has(action.id)) task.title = notices.get(action.id);
       if (motionStatus(task.status))
         motionCards.set(action.id, { action, task, slot: index + 1 });
@@ -459,16 +450,19 @@ export function installTravelPilot(deps) {
     }
     healthReason = reason;
   }
-  async function readControl(command, id) {
+  async function readControl(command, id, options) {
     try {
       return (
-        (await call(command, id)) || { ok: false, reason: "helper-unavailable" }
+        (await call(command, id, undefined, undefined, options)) || {
+          ok: false,
+          reason: "helper-unavailable",
+        }
       );
     } catch {
       return { ok: false, reason: "helper-unavailable" };
     }
   }
-  async function poll() {
+  async function poll({ localOnly = false } = {}) {
     if (!visible.size) return;
     try {
       const sessions = store.sessions(8).map(withRequest),
@@ -483,6 +477,8 @@ export function installTravelPilot(deps) {
         sessions,
         focus,
         request: focus?.pendingRequest,
+        selection:
+          frame.selection?.threadId === focus?.id ? frame.selection : undefined,
         native: frame.native?.threadId === focus?.id ? frame.native : undefined,
         offline: appOffline,
       };
@@ -502,7 +498,7 @@ export function installTravelPilot(deps) {
     }
     // A key press has priority over background Accessibility observation.
     // Local cards may refresh, but no new helper competes with navigation.
-    if (busy) {
+    if (busy || localOnly) {
       await drawAll();
       return;
     }
@@ -515,11 +511,16 @@ export function installTravelPilot(deps) {
       return pollPromise;
     }
     const gen = generation,
-      focus = frame.focus;
+      focus = frame.focus,
+      controller = new AbortController();
+    observationAbort = controller;
     nativeTarget = focus?.id;
     pollPromise = (async () => {
       await drawAll();
-      const native = await readControl("read", focus?.id || "");
+      if (controller.signal.aborted || gen !== generation) return;
+      const native = await readControl("read", focus?.id || "", {
+        signal: controller.signal,
+      });
       if (gen !== generation || !dataAvailable || frame.focus?.id !== focus?.id)
         return;
       const observedAt = now();
@@ -566,8 +567,11 @@ export function installTravelPilot(deps) {
         (!externalVoice || externalVoice === "unknown") &&
         now() - globalReadAt >= 4500
       ) {
+        if (controller.signal.aborted || gen !== generation) return;
         globalReadAt = now();
-        const global = await readControl("globals", "current");
+        const global = await readControl("globals", "current", {
+          signal: controller.signal,
+        });
         if (
           gen !== generation ||
           !dataAvailable ||
@@ -587,6 +591,7 @@ export function installTravelPilot(deps) {
       }
     })()
       .catch(() => {
+        if (gen !== generation || controller.signal.aborted) return;
         // Rendering/ledger failures are not evidence that Codex went offline.
         frame = { ...frame, native: undefined };
         readCandidate = undefined;
@@ -594,6 +599,7 @@ export function installTravelPilot(deps) {
       })
       .finally(() => {
         pollPromise = undefined;
+        if (observationAbort === controller) observationAbort = undefined;
       });
     return pollPromise;
   }
@@ -606,37 +612,85 @@ export function installTravelPilot(deps) {
     }, 4500).unref?.();
   }
   async function navigate(id) {
-    // Drain the existing read before opening a task. Its stale result is
-    // discarded by the generation check while selection is in progress.
+    const startedAt = monotonicNow();
+    // Supersede the observation and wait only for its process to stop.
+    generation++;
+    frame.native = undefined;
+    frame.selection = undefined;
+    readCandidate = undefined;
+    observationAbort?.abort();
     if (pollPromise) await pollPromise;
-    const already = await readControl("confirm", id);
-    if (already.ok && already.threadId === id) return;
+    const navigationAt = monotonicNow();
     const opened = await readControl("navigate", id);
     if (!opened.ok || opened.threadId !== id || !opened.windowId)
       throw new Error("Task navigation was not confirmed");
+    frame.selection = { threadId: id, windowId: opened.windowId, at: now() };
+    appOffline = false;
+    nextNativeReadAt = 0;
+    return {
+      waitMs: navigationAt - startedAt,
+      navigationMs: monotonicNow() - navigationAt,
+    };
   }
   async function chooseTask(snapshot, action) {
     if (busy) return;
+    const startedAt = monotonicNow();
+    let timing,
+      confirmedAt,
+      success = false;
     busy = true;
     generation++;
     frame.transitioning = true;
+    frame.openingId = snapshot?.id;
+    frame.native = undefined;
+    frame.selection = undefined;
     pressed.clear();
-    await drawAll();
+    // Enqueue press feedback without holding navigation behind image transport.
+    const feedback = drawAll().catch(() =>
+      logger.warn("Travel press feedback failed"),
+    );
     try {
       if (snapshot) {
-        await navigate(snapshot.id);
+        timing = await navigate(snapshot.id);
+        confirmedAt = monotonicNow();
         ledger.record(snapshot, store);
       } else await openNewChat(store.latestThread()?.cwd);
       store.invalidate();
-    } catch (error) {
+      success = true;
+    } catch {
       await notice(action, "OPEN CODEX");
-      logger.warn(`Travel pilot task selection failed: ${String(error)}`);
+      logger.warn("Travel pilot task selection failed");
     } finally {
       generation++;
       frame.transitioning = false;
-      busy = false;
-      if (pollPromise) await pollPromise;
-      await poll();
+      frame.openingId = undefined;
+      // Keep new presses blocked until the confirmed display is enqueued.
+      try {
+        await feedback;
+        await poll({ localOnly: true });
+      } catch {
+        logger.warn("Travel confirmed display refresh failed");
+      } finally {
+        busy = false;
+      }
+      const displayedAt = monotonicNow();
+      logger.info(
+        "Travel navigation timing: " +
+          "outcome=" +
+          (success ? "confirmed" : "failed") +
+          " waitMs=" +
+          Math.round(timing?.waitMs || 0) +
+          " navigationMs=" +
+          Math.round(timing?.navigationMs || 0) +
+          " displayMs=" +
+          Math.round(
+            confirmedAt === undefined ? 0 : displayedAt - confirmedAt,
+          ) +
+          " totalMs=" +
+          Math.round(displayedAt - startedAt),
+      );
+      // Local cards/SEEN are already current; conversation controls follow.
+      void poll().catch(() => logger.warn("Travel background refresh failed"));
     }
   }
   async function utilityDown(event) {
@@ -892,6 +946,8 @@ export function installTravelPilot(deps) {
       clearInterval(timer);
       clearInterval(animationTimer);
       timer = undefined;
+      generation++;
+      observationAbort?.abort();
       pressed.clear();
       utilityPresses.clear();
       if (dictation)

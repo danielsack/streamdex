@@ -116,6 +116,8 @@ export function taskSvg(task, slot, time = 0) {
   let s =
     `<svg xmlns="http://www.w3.org/2000/svg" width="144" height="144" viewBox="0 0 144 144"><rect width="144" height="144" rx="12" fill="${background}"/>` +
     taskBorder(task.status, color, time);
+  if (task.opening)
+    s += `<rect x="5" y="5" width="134" height="134" rx="10" fill="none" stroke="${W}" stroke-width="4"/>`;
   if (task.active)
     s +=
       `<rect x="11" y="11" width="23" height="23" rx="6" fill="${W}"/>` +
@@ -131,7 +133,7 @@ export function taskSvg(task, slot, time = 0) {
   if (task.status === "stale")
     s += `<path d="M58 108l6-6m4 6l6-6m4 6l6-6" stroke="${M}" stroke-width="2"/>`;
   s += txt(
-    fit(task.projectName || "No project", 16),
+    task.opening ? "Opening…" : fit(task.projectName || "No project", 16),
     72,
     130,
     16,

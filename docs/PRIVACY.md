@@ -29,6 +29,8 @@ The repository has no file-crawling or upload script for personal Documents, Des
 
 The code also includes a local Codex app-server helper for account-usage information; Codex may make its own authenticated service requests. The supplied layouts do not expose the usage action. This is separate from the local Stream Deck WebSocket connection and the optional light requests.
 
+Task-navigation timing entries record a fixed outcome and elapsed milliseconds only, without task IDs, titles, project names, or paths.
+
 The SDK writes local logs beneath the installed plugin's working directory. Error messages or subprocess diagnostics can include paths or app details. Those logs are excluded from the release allowlist, and packaging must start from the reviewed source tree, never from a copy of a running installation. Treat generated logs, read ledgers and backups as private.
 
 ## Local controls and visible data
