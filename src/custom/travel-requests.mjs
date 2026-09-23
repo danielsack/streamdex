@@ -31,13 +31,11 @@ export function createRequestTracker() {
     plan = undefined;
   }
   function read() {
-    const all = [...requests.values()];
-    const r = all.filter((request) => !request.async).at(-1) ?? all.at(-1);
+    const r = [...requests.values()].at(-1);
     return r
       ? {
           id: r.id,
           kind: r.kind,
-          blocking: !r.async,
           title: [...r.questions.values()][0] ?? "Input requested",
         }
       : plan;

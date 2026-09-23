@@ -31,7 +31,7 @@ const baseTask = {
   status: "running",
   lastEventAt: 1000,
 };
-test("async question remains available without marking ongoing work as blocked, then clears after its matching reply", () => {
+test("async question remains INPUT through ongoing work and clears only after its matching reply", () => {
   const t = createRequestTracker();
   t.consume({
     type: "response_item",
@@ -58,7 +58,7 @@ test("async question remains available without marking ongoing work as blocked, 
       { ok: true, threadId: "task-a", kind: "running" },
       1100,
     ).status,
-    "running",
+    "needs-input",
   );
   const answer = [
     {

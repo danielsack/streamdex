@@ -3,10 +3,6 @@ import { promisify } from "node:util";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
 import { createRequestReader } from "./travel-requests.mjs";
-import {
-  createSidebarApprovalObserver,
-  createTitleIndex,
-} from "./sidebar-approvals.mjs";
 export { pendingRequest } from "./travel-requests.mjs";
 
 import { taskSvg, controlSvg, utilitySvg } from "./travel-visuals.mjs";
@@ -55,15 +51,9 @@ export function projectTask(
       active: false,
     };
   let status = snapshot.status;
-  const optionalQuestion =
-    snapshot.pendingRequest?.kind === "question" &&
-    snapshot.pendingRequest.blocking === false;
   const matches = native?.ok === true && native.threadId === snapshot.id;
   if (offline) status = "offline";
-  else if (
-    (snapshot.pendingRequest && !optionalQuestion) ||
-    snapshot.status === "needs-input"
-  )
+  else if (snapshot.pendingRequest || snapshot.status === "needs-input")
     status = "needs-input";
   else if (matches && native.kind === "running") status = "running";
   else if (
@@ -85,7 +75,6 @@ export function projectTask(
     status,
     title: snapshot.displayTitle || snapshot.title || "Untitled task",
     active: matches && !offline,
-    optionalQuestion: optionalQuestion && !offline && status !== "needs-input",
   };
 }
 
@@ -125,22 +114,6 @@ export function contextPair(frame, now = Date.now()) {
       detail: "Choose a task key",
       left: choice("SELECT TASK", "none"),
       right: choice("SELECT TASK", "none"),
-    };
-  if (!verified && task.pendingRequest?.kind === "approval")
-    return {
-      ...base,
-      kind: "approval",
-      detail: "Approval required",
-      left: choice("OPEN REQUEST", "open"),
-      right: choice("VIEW REQUEST", "open"),
-    };
-  if (!verified && task.pendingRequest?.kind === "question")
-    return {
-      ...base,
-      kind: "question",
-      detail: task.pendingRequest.title || "Question available",
-      left: choice("OPEN QUESTION", "open"),
-      right: choice("VIEW OPTIONS", "open"),
     };
   if (!verified)
     return {
@@ -297,25 +270,9 @@ export function installTravelPilot(deps) {
     logger.info(
       `Travel restored ${ledger.restore(store)} read acknowledgements`,
     );
-  const approvalObserver =
-    deps.approvalObserver ??
-    (store.databasePath
-      ? createSidebarApprovalObserver({
-          titleIndex: createTitleIndex(store.databasePath),
-          now,
-        })
-      : undefined);
   const requestFor = deps.requestFor || createRequestReader();
-  const withRequest = (task) => {
-    if (!task) return task;
-    const request = requestFor(task),
-      approval = approvalObserver?.requestFor(task);
-    return {
-      ...task,
-      pendingRequest:
-        request?.blocking === false ? approval || request : request || approval,
-    };
-  };
+  const withRequest = (task) =>
+    task ? { ...task, pendingRequest: requestFor(task) } : task;
   const resolveProject =
     deps.projectName ||
     createProjectResolver(
@@ -514,11 +471,8 @@ export function installTravelPilot(deps) {
   async function poll() {
     if (!visible.size) return;
     try {
-      const rawSessions = store.sessions(8),
-        rawFocus = store.focusedThread();
-      void approvalObserver?.poll([...rawSessions, rawFocus]);
-      const sessions = rawSessions.map(withRequest),
-        focus = withRequest(rawFocus);
+      const sessions = store.sessions(8).map(withRequest),
+        focus = withRequest(store.focusedThread());
       if (frame.focus?.id !== focus?.id) {
         generation++;
         readCandidate = undefined;
@@ -930,7 +884,6 @@ export function installTravelPilot(deps) {
       logger.info("Travel pilot v2 active (Travel settings only)");
     },
     stop() {
-      approvalObserver?.stop();
       clearInterval(timer);
       clearInterval(animationTimer);
       timer = undefined;

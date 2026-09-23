@@ -19,7 +19,7 @@ I'm sharing the setup and the ideas behind it. If some of it is useful for your 
 
 ## What is on the deck
 
-Each card shows a task title, project, and status. Running tasks have a moving blue border; blocking questions and approvals pulse amber, and errors pulse red. An optional unanswered question adds a `?` to `RUN` while work continues. Green means a new response is ready. Gray means you've opened it.
+Each card shows a task title, project, and status. Running tasks have a moving blue border; questions pulse amber and errors pulse red. Green means a new response is ready. Gray means you've opened it.
 
 [![Task states: moving blue RUN, pulsing amber INPUT and red ERROR, green READY and gray SEEN](docs/assets/readme-status.gif)](https://danielsack.github.io/streamdex/demo/)
 
