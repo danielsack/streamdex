@@ -21079,8 +21079,7 @@ async function nativeCall(command2, id, operation, token) {
     } catch {
       return {
         ok: false,
-        reason: "helper-unavailable",
-        message: String(error40)
+        reason: error40.killed || error40.code === "ETIMEDOUT" ? "helper-timeout" : "helper-unavailable"
       };
     }
   }
@@ -21223,58 +21222,126 @@ function installTravelPilot(deps) {
       animating = false;
     }
   }
+  let dataAvailable = false, appOffline = false, nextNativeReadAt = 0;
+  let nativeTarget, globalReadAt = -Infinity, healthReason, healthLoggedAt = -Infinity;
+  function controlHealth(native) {
+    const reason = native.ok ? "ready" : [
+      "helper-timeout",
+      "helper-unavailable",
+      "no-focus",
+      "accessibility",
+      "offline",
+      "control-failed"
+    ].includes(native.reason) ? native.reason : "unverified";
+    if (reason !== healthReason || now() - healthLoggedAt >= 6e4) {
+      if (reason !== "ready")
+        logger2.warn(
+          "Travel UI controls unavailable: " + reason + "; task status uses local data"
+        );
+      else if (healthReason && healthReason !== "ready")
+        logger2.info("Travel UI controls recovered");
+      healthLoggedAt = now();
+    }
+    healthReason = reason;
+  }
+  async function readControl(command2, id) {
+    try {
+      return await call(command2, id) || { ok: false, reason: "helper-unavailable" };
+    } catch {
+      return { ok: false, reason: "helper-unavailable" };
+    }
+  }
   async function poll() {
-    if (pollPromise) return pollPromise;
     if (!visible.size) return;
-    const gen = generation;
+    try {
+      const sessions = store.sessions(8).map(withRequest), focus2 = withRequest(store.focusedThread());
+      if (frame.focus?.id !== focus2?.id) {
+        generation++;
+        readCandidate = void 0;
+        nextNativeReadAt = 0;
+      }
+      frame = {
+        ...frame,
+        sessions,
+        focus: focus2,
+        request: focus2?.pendingRequest,
+        native: frame.native?.threadId === focus2?.id ? frame.native : void 0,
+        offline: appOffline
+      };
+      if (!dataAvailable && healthReason === "data-unavailable")
+        logger2.info("Travel task data recovered");
+      dataAvailable = true;
+    } catch {
+      if (dataAvailable) generation++;
+      dataAvailable = false;
+      readCandidate = void 0;
+      frame = { ...frame, native: void 0, offline: true };
+      if (healthReason !== "data-unavailable")
+        logger2.warn("Travel task data unavailable");
+      healthReason = "data-unavailable";
+      await drawAll();
+      return;
+    }
+    if (pollPromise || nativeTarget === frame.focus?.id && now() < nextNativeReadAt) {
+      await drawAll();
+      return pollPromise;
+    }
+    const gen = generation, focus = frame.focus;
+    nativeTarget = focus?.id;
     pollPromise = (async () => {
-      try {
-        const sessions = store.sessions(8).map(withRequest), focus = withRequest(store.focusedThread());
-        const native = await call("read", focus?.id || "");
-        let ui2 = native.ui;
-        if (!ui2?.voice || ui2.voice === "unknown") {
-          const global = await call("globals", "current");
-          if (global.ok) ui2 = { ...ui2, voice: global.voice };
-        }
-        if (gen !== generation) return;
-        if (ui2?.voice) {
-          voice = ui2.voice;
+      await drawAll();
+      const native = await readControl("read", focus?.id || "");
+      if (gen !== generation || !dataAvailable || frame.focus?.id !== focus?.id)
+        return;
+      const observedAt = now();
+      if (typeof native.appRunning === "boolean")
+        appOffline = !native.appRunning;
+      controlHealth(native);
+      nextNativeReadAt = native.ok ? 0 : now() + 3e3;
+      let ui2 = native.ui;
+      if (ui2?.voice && ui2.voice !== "unknown") {
+        voice = ui2.voice;
+        voiceAt = now();
+      }
+      for (const kind of ["fast", "plan"]) {
+        if (native.ok && native.threadId === focus?.id && typeof ui2?.[kind] === "boolean")
+          modes.set(focus.id + ":" + kind, { active: ui2[kind], at: now() });
+      }
+      frame = { ...frame, native, observedAt, offline: appOffline };
+      const current = frame.focus;
+      if (native.ok && native.threadId === current?.id && native.kind === "idle" && current?.status === "unread" && current.completedAt > 0) {
+        const key = current.id + ":" + current.completedAt;
+        if (readCandidate?.key === key && now() - readCandidate.at >= 2e3) {
+          ledger.record(current, store);
+          frame.sessions = store.sessions(8).map(withRequest);
+          frame.focus = withRequest(store.focusedThread());
+          frame.request = frame.focus?.pendingRequest;
+        } else if (readCandidate?.key !== key)
+          readCandidate = { key, at: now() };
+      } else readCandidate = void 0;
+      await drawAll();
+      const externalVoice = voiceObserver?.();
+      if ((!ui2?.voice || ui2.voice === "unknown") && (!externalVoice || externalVoice === "unknown") && now() - globalReadAt >= 4500) {
+        globalReadAt = now();
+        const global = await readControl("globals", "current");
+        if (gen !== generation || !dataAvailable || frame.focus?.id !== focus?.id)
+          return;
+        if (global.ok && global.voice && global.voice !== "unknown") {
+          voice = global.voice;
           voiceAt = now();
         }
-        for (const kind of ["fast", "plan"])
-          if (native.ok && native.threadId === focus?.id && typeof ui2?.[kind] === "boolean")
-            modes.set(focus.id + ":" + kind, { active: ui2[kind], at: now() });
-        if (gen !== generation) return;
-        frame = {
-          ...frame,
-          sessions,
-          focus,
-          native,
-          observedAt: now(),
-          request: focus?.pendingRequest,
-          offline: native.appRunning === false || native.reason === "helper-unavailable"
-        };
-        if (native.ok && native.threadId === focus?.id && native.kind === "idle" && focus.status === "unread" && focus.completedAt > 0) {
-          const key = focus.id + ":" + focus.completedAt;
-          if (readCandidate?.key === key && now() - readCandidate.at >= 2e3) {
-            ledger.record(focus, store);
-            frame.sessions = store.sessions(8).map(withRequest);
-            frame.focus = withRequest(store.focusedThread());
-            frame.request = frame.focus?.pendingRequest;
-          } else if (readCandidate?.key !== key)
-            readCandidate = { key, at: now() };
-        } else readCandidate = void 0;
-      } catch (error40) {
-        frame = {
-          ...frame,
-          native: void 0,
-          observedAt: now(),
-          offline: true
-        };
-        logger2.warn("Travel pilot status source unavailable");
+        if (typeof global.appRunning === "boolean") {
+          appOffline = !global.appRunning;
+          frame = { ...frame, offline: appOffline };
+          if (appOffline) frame.native = void 0;
+        }
+        await drawAll();
       }
-      await drawAll();
-    })().finally(() => {
+    })().catch(() => {
+      frame = { ...frame, native: void 0 };
+      readCandidate = void 0;
+      logger2.warn("Travel UI refresh failed");
+    }).finally(() => {
       pollPromise = void 0;
     });
     return pollPromise;
