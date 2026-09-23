@@ -61,6 +61,7 @@ function fixture(t, ownerName = "agentStatus") {
     renderKey: (action, svg) => render(action, svg),
     logger: { info: (s) => logs.push(s), warn: (s) => logs.push(s) },
     now: () => now,
+    monotonicNow: () => now,
     openThread: async () => {
       throw Error("Full composer opener must not be used for task keys");
     },
@@ -341,4 +342,20 @@ test("a failed display transport does not wedge future navigation", async (t) =>
   f.render(async (action, svg) => f.images.set(action.id, svg));
   await f.press();
   assert.equal(f.calls.filter((c) => c.command === "navigate").length, 2);
+});
+
+test("failed navigation retains elapsed helper time in the timing log", async (t) => {
+  const f = fixture(t);
+  await f.mount();
+  f.navigate(async () => {
+    f.advance();
+    return { ok: false, reason: "helper-timeout" };
+  });
+  await f.press();
+  assert.ok(
+    f.logs.includes(
+      "Travel navigation timing: outcome=failed waitMs=0 navigationMs=4000 displayMs=0 totalMs=4000",
+    ),
+  );
+  assert.equal(f.snapshot().status, "unread");
 });

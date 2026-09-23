@@ -23,22 +23,37 @@ func desktopLogFiles() -> [String] {
     formatter.locale = Locale(identifier: "en_US_POSIX")
     formatter.timeZone = TimeZone(secondsFromGMT: 0)
     formatter.dateFormat = "yyyy/MM/dd"
+    return desktopLogFiles(in: [Date(), Date(timeIntervalSinceNow: -86_400)].map {
+        root.appendingPathComponent(formatter.string(from: $0))
+    })
+}
+
+func logModificationTime(_ url: URL) -> TimeInterval? {
+    var info = stat()
+    guard url.path.withCString({ Darwin.fstatat(AT_FDCWD, $0, &info, 0) }) == 0 else { return nil }
+    return TimeInterval(info.st_mtimespec.tv_sec) + TimeInterval(info.st_mtimespec.tv_nsec) / 1_000_000_000
+}
+
+func desktopLogFiles(
+    in directories: [URL],
+    modifiedAt: (URL) -> TimeInterval? = logModificationTime
+) -> [String] {
     let manager = FileManager.default
-    return [Date(), Date(timeIntervalSinceNow: -86_400)].flatMap { date in
-        let directory = root.appendingPathComponent(formatter.string(from: date))
-        return (try? manager.contentsOfDirectory(
-            at: directory,
-            includingPropertiesForKeys: [.contentModificationDateKey, .fileSizeKey]
-        )) ?? []
+    let candidates = directories.flatMap { directory in
+        (try? manager.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? []
+    }.filter { $0.pathExtension == "log" }
+    // File metadata must be captured once per candidate, never inside the
+    // sort comparator. Busy installations can create thousands of logs a day.
+    var ranked: [(url: URL, modifiedAt: TimeInterval, index: Int)] = candidates.enumerated().map { index, url in
+        (url: url, modifiedAt: modifiedAt(url) ?? -Double.infinity, index: index)
     }
-    .filter { $0.pathExtension == "log" }
-    .sorted {
-        let left = try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
-        let right = try? $1.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
-        return (left ?? .distantPast) > (right ?? .distantPast)
+    ranked.sort { left, right in
+        left.modifiedAt == right.modifiedAt
+            ? left.index < right.index
+            : left.modifiedAt > right.modifiedAt
     }
-    .prefix(8).map {
-        $0.standardized.resolvingSymlinksInPath().path
+    return ranked.prefix(8).map {
+        $0.url.standardized.resolvingSymlinksInPath().path
     }
 }
 

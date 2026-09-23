@@ -611,7 +611,7 @@ export function installTravelPilot(deps) {
       void drawAll();
     }, 4500).unref?.();
   }
-  async function navigate(id) {
+  async function navigate(id, timing = {}) {
     const startedAt = monotonicNow();
     // Supersede the observation and wait only for its process to stop.
     generation++;
@@ -621,21 +621,20 @@ export function installTravelPilot(deps) {
     observationAbort?.abort();
     if (pollPromise) await pollPromise;
     const navigationAt = monotonicNow();
+    timing.waitMs = navigationAt - startedAt;
     const opened = await readControl("navigate", id);
+    timing.navigationMs = monotonicNow() - navigationAt;
     if (!opened.ok || opened.threadId !== id || !opened.windowId)
       throw new Error("Task navigation was not confirmed");
     frame.selection = { threadId: id, windowId: opened.windowId, at: now() };
     appOffline = false;
     nextNativeReadAt = 0;
-    return {
-      waitMs: navigationAt - startedAt,
-      navigationMs: monotonicNow() - navigationAt,
-    };
+    return timing;
   }
   async function chooseTask(snapshot, action) {
     if (busy) return;
     const startedAt = monotonicNow();
-    let timing,
+    let timing = {},
       confirmedAt,
       success = false;
     busy = true;
@@ -651,7 +650,7 @@ export function installTravelPilot(deps) {
     );
     try {
       if (snapshot) {
-        timing = await navigate(snapshot.id);
+        await navigate(snapshot.id, timing);
         confirmedAt = monotonicNow();
         ledger.record(snapshot, store);
       } else await openNewChat(store.latestThread()?.cwd);

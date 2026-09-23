@@ -1,13 +1,18 @@
 import { rmSync as removeFixture } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { existsSync, mkdtempSync, utimesSync, writeFileSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  realpathSync,
+  utimesSync,
+  writeFileSync,
+} from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-const native = resolve(
-  ".build/test-bin/codex-ui-control",
-);
+const native = resolve(".build/test-bin/codex-ui-control");
 const temporaryRoots: string[] = [];
 
 afterEach(() => {
@@ -104,6 +109,47 @@ function evaluate(
 }
 
 describe("native exact-target fixture", () => {
+  it("discovers the newest logs with one metadata read per candidate and observes later file changes", () => {
+    const root = mkdtempSync(join(tmpdir(), "streamdex-log-discovery-"));
+    temporaryRoots.push(root);
+    const directories = [join(root, "day-a"), join(root, "day-b")];
+    for (const directory of directories) mkdirSync(directory);
+    const files = Array.from({ length: 2000 }, (_, i) => {
+      const path = join(directories[i % 2]!, `fixture-${i}.log`);
+      writeFileSync(path, "");
+      const time = new Date(1800000000000 + i * 1000);
+      utimesSync(path, time, time);
+      return path;
+    });
+    writeFileSync(join(directories[0]!, "ignore.txt"), "fictional");
+    function check(expected: string[], reads: number) {
+      const payload = Buffer.from(
+        JSON.stringify({
+          directories,
+          expected: expected.map((path) => realpathSync(path)),
+          expectedReads: reads,
+        }),
+      ).toString("base64");
+      const result = spawnSync(native, ["--log-discovery-fixture", payload], {
+        encoding: "utf8",
+        timeout: 5000,
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+    }
+    check(files.slice(-8).reverse(), 2000);
+    // A newly created log must be discovered without any persistent cache.
+    const added = join(directories[1]!, "new.log");
+    writeFileSync(added, "fictional event");
+    const latest = new Date(1800005000000);
+    utimesSync(added, latest, latest);
+    check([added, ...files.slice(-7).reverse()], 2001);
+    // An old file receiving new activity must become the newest immediately.
+    const changed = new Date(1800005001000);
+    utimesSync(files[0]!, changed, changed);
+    check([files[0]!, added, ...files.slice(-6).reverse()], 2001);
+  });
+
   it("arbitrates the newest focused-primary event globally across separate logs", () => {
     expect(
       evaluateMulti(
