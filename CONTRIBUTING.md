@@ -12,6 +12,10 @@ PRs must pass **Build and test**, be up to date with `main`, and resolve review 
 
 Use a clear PR title that describes the result; it becomes the squash commit title. Do not include private task titles, paths, or account details in branch names, commits, issues, or PRs. Use a public-safe Git commit email (GitHub's privacy settings provide a noreply address). Preserve copyright and third-party license notices, and only contribute material you have the right to share under the project's MIT license.
 
+## Versions and changelog
+
+Add user-visible changes to [CHANGELOG.md](CHANGELOG.md) under Unreleased. Candidate versions are prepared in a focused PR using [VERSIONING.md](docs/VERSIONING.md); merges do not automatically create releases. Keep package, plugin, profile, and payload versions aligned and never reuse a published tag.
+
 ## Local setup and checks
 
 Read [AGENTS.md](AGENTS.md), [BUILD.md](docs/BUILD.md), and [PRIVACY.md](docs/PRIVACY.md). Full checks require Apple Silicon macOS, the selected Xcode command-line toolchain, Python 3, and the Node version in `.nvmrc`. From the checkout:

@@ -1,4 +1,5 @@
 import { build } from "esbuild";
+import { readVersion } from "./version.mjs";
 import {
   existsSync,
   readdirSync,
@@ -83,7 +84,7 @@ await build({
   define: {
     __STREAMDECK_CODEX_BUILD__: JSON.stringify({
       schemaVersion: 1,
-      pluginVersion: "0.1.0.1",
+      pluginVersion: readVersion(root).pluginVersion,
       commit: "local-candidate",
       treeState: "dirty",
     }),

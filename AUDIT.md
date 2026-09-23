@@ -1,6 +1,8 @@
 # Local candidate audit
 
-**Candidate:** v0.1.0-beta.1 (plugin version 0.1.0.1). **Release publication status: not approved; live acceptance pending.** This report covers the local release tree and proposed setup kit. The initial source snapshot was subsequently pushed with explicit owner approval. Installable-release publication remains pending; browser-demo hosting is separate from hardware acceptance. The existing Stream Deck installation and its backups were preserved.
+The current source candidate is **v0.1.0-beta.2** (Stream Deck **0.1.0.2**). Its [changelog](CHANGELOG.md) records the navigation fixes and versioning changes. The initial audit below describes the original snapshot; later changes require their own exact-source and artifact checks. The installable-release gates remain in [VERIFICATION.md](docs/VERIFICATION.md).
+
+**Initial audit baseline:** v0.1.0-beta.1 (plugin version 0.1.0.1). **Release publication status: not approved; live acceptance pending.** This report covers the local release tree and proposed setup kit. The initial source snapshot was subsequently pushed with explicit owner approval. Installable-release publication remains pending; browser-demo hosting is separate from hardware acceptance. The existing Stream Deck installation and its backups were preserved.
 
 ## Candidate boundary
 

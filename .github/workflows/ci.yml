@@ -30,6 +30,7 @@ jobs:
           node-version-file: .nvmrc
       - name: Verify checked-in source and payload before rebuilding
         run: |
+          node scripts/check-version.mjs
           python3 scripts/audit.py --source-only --staged
           shasum -a 256 -c SHA256SUMS
       - name: Install pinned dependencies without lifecycle scripts

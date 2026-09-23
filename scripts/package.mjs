@@ -1,3 +1,4 @@
+import { readVersion } from "./version.mjs";
 import {
   readFileSync,
   writeFileSync,
@@ -13,6 +14,7 @@ const root = resolve(import.meta.dirname, ".."),
   id = "io.streamdex.plugin",
   plugin = id + ".sdPlugin";
 process.chdir(root);
+const { version, archiveName } = readVersion(root);
 function run(file, args, opts = {}) {
   const r = spawnSync(file, args, { stdio: "inherit", ...opts });
   if (r.error || r.status !== 0) throw r.error || Error(file + " failed");
@@ -48,7 +50,7 @@ writeFileSync(
   "payload.json",
   JSON.stringify(
     {
-      version: "0.1.0-beta.1",
+      version,
       files: Object.fromEntries(payloadFiles.map((f) => [f, sha(f)])),
     },
     null,
@@ -75,14 +77,12 @@ for (const f of files) {
     throw Error("Unsafe release entry: " + f);
 }
 mkdirSync(".dist", { recursive: true });
-run(
-  "/usr/bin/zip",
-  ["-q", "-X", "-FS", ".dist/streamdex-0.1.0-beta.1-macos-arm64.zip", "-@"],
-  { input: files.join("\n") + "\n", stdio: ["pipe", "inherit", "inherit"] },
-);
+run("/usr/bin/zip", ["-q", "-X", "-FS", `.dist/${archiveName}`, "-@"], {
+  input: files.join("\n") + "\n",
+  stdio: ["pipe", "inherit", "inherit"],
+});
 writeFileSync(
   ".dist/SHA256SUMS",
-  sha(".dist/streamdex-0.1.0-beta.1-macos-arm64.zip") +
-    "  streamdex-0.1.0-beta.1-macos-arm64.zip\n",
+  sha(`.dist/${archiveName}`) + `  ${archiveName}\n`,
 );
 console.log("Packaged local release kit; nothing uploaded.");

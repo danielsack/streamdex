@@ -95,7 +95,7 @@ var __privateMethod = (obj, member, method) => (__accessCheck(obj, member, "acce
 var define_STREAMDECK_CODEX_BUILD_default;
 var init_define_STREAMDECK_CODEX_BUILD = __esm({
   "<define:__STREAMDECK_CODEX_BUILD__>"() {
-    define_STREAMDECK_CODEX_BUILD_default = { schemaVersion: 1, pluginVersion: "0.1.0.1", commit: "local-candidate", treeState: "dirty" };
+    define_STREAMDECK_CODEX_BUILD_default = { schemaVersion: 1, pluginVersion: "0.1.0.2", commit: "local-candidate", treeState: "dirty" };
   }
 });
 
