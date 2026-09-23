@@ -21,6 +21,10 @@ Profile source is generated from scripts/generate-profiles.mjs with stable, synt
 
 Build outputs may vary with Swift, SDK and compiler versions; the source build is repeatable but is not claimed bit-for-bit reproducible across toolchains. Every distributed output gets its own checksum and audit.
 
+## Candidate versions
+
+Follow [VERSIONING.md](VERSIONING.md) to prepare a new candidate. Build and packaging derive all versioned metadata and filenames from package.json. Run `npm run check:version` to verify the checked-in fields; CI also checks them before rebuilding.
+
 ## Media and demo
 
 The existing illustrated film was cut to remove the personal statistics and unsupported retry scene, with a Streamdex closing card. The public MP4 is silent H.264, 1280 × 720 at 24 fps, with captions supplied separately. It is encoded with the slow preset, CRF 25, YUV 4:2:0, stripped source metadata and fast-start MP4 layout. Its content and timing are preserved from the reviewed 1080p film. The README hero is a 4.8-second, 800 × 450 GIF at 10 fps using a 128-color palette. It plays once, offers a static alternative, and selects the poster for reduced motion. The full video remains linked and plays in the standalone demo. GitHub requires an uploaded video attachment for its native inline player; reducing a repository MP4 alone does not turn a Markdown link into a player. The original media and its private working notes are not distributed. The photo has metadata-free 360 × 360 (README) and 886 × 886 (hardware guide) JPEG derivatives. Neither embeds the source file’s EXIF, GPS, thumbnail, or other personal metadata.

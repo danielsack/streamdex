@@ -20,11 +20,12 @@ class ReleaseAuditTests(unittest.TestCase):
         (self.root / 'scripts').mkdir()
         shutil.copy2(AUDITOR, self.root / 'scripts/audit.py')
         (self.root / 'fixture.txt').write_text('Fictional task content.\n')
-        self.files = ['fixture.txt', 'payload.json', 'release-files.json', 'scripts/audit.py']
+        (self.root / 'package.json').write_text(json.dumps({'version': '9.8.7-beta.6'}))
+        self.files = ['package.json', 'fixture.txt', 'payload.json', 'release-files.json', 'scripts/audit.py']
         self.pack()
 
     def pack(self):
-        payload = {'version': 'fixture', 'files': {
+        payload = {'version': '9.8.7-beta.6', 'files': {
             'fixture.txt': hashlib.sha256((self.root / 'fixture.txt').read_bytes()).hexdigest()
         }}
         (self.root / 'payload.json').write_text(json.dumps(payload))
@@ -36,7 +37,7 @@ class ReleaseAuditTests(unittest.TestCase):
 
     @property
     def archive(self):
-        return self.root / '.dist/streamdex-0.1.0-beta.1-macos-arm64.zip'
+        return self.root / '.dist/streamdex-9.8.7-beta.6-macos-arm64.zip'
 
     def audit(self, *args):
         result = subprocess.run(
@@ -96,6 +97,14 @@ class ReleaseAuditTests(unittest.TestCase):
         (self.root / 'fixture.txt').write_text('/' + 'Users/' + 'fictional-owner/private.txt')
         self.pack()
         self.assertRule('personal-path')
+
+    def test_rejects_payload_version_mismatch(self):
+        (self.root / 'package.json').write_text(json.dumps({'version': '9.8.7-beta.7'}))
+        self.assertRule('payload-version-mismatch', '--source-only')
+
+    def test_rejects_unsafe_version_without_reading_other_archives(self):
+        (self.root / 'package.json').write_text(json.dumps({'version': '../outside'}))
+        self.assertRule('invalid-release-version')
 
     def test_rejects_changed_archive_content(self):
         with zipfile.ZipFile(self.archive, 'w') as archive:

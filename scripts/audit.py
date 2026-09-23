@@ -48,11 +48,16 @@ def walk(directory):
   elif p.is_dir():walk(p)
   elif str(p.relative_to(root)) not in allow:fail(str(p.relative_to(root)),'not-allowlisted')
 walk(root)
-payload=json.loads((root/'payload.json').read_text())['files']
+payload_document=json.loads((root/'payload.json').read_text())
+version=json.loads((root/'package.json').read_text())['version']
+valid_version=isinstance(version,str) and re.fullmatch(r'(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-beta\.([1-9]\d*))?',version)
+if not valid_version:fail('package.json','invalid-release-version')
+if payload_document.get('version')!=version:fail('payload.json','payload-version-mismatch')
+payload=payload_document['files']
 for name,sha in payload.items():
  if name not in allow or not (root/name).is_file() or hashlib.sha256((root/name).read_bytes()).hexdigest()!=sha:fail(name,'payload-hash-mismatch')
-archive=root/'.dist/streamdex-0.1.0-beta.1-macos-arm64.zip'
-if archive.exists() and not args.source_only:
+archive=root/f'.dist/streamdex-{version}-macos-arm64.zip' if valid_version else None
+if archive is not None and archive.exists() and not args.source_only:
  inspect('release-kit.zip',archive.read_bytes())
  with zipfile.ZipFile(archive) as z:
   names={i.filename for i in z.infolist() if not i.is_dir()}

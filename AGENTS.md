@@ -14,6 +14,10 @@ Run ./streamdex-setup install with zero, one, or two --light HOST arguments. The
 
 For development, follow docs/BUILD.md. Tests use fictional tasks and disposable roots only. Do not run live acceptance actions against the user's current conversation. Keep runtime state, backups, private matching lists, audit details and browser diagnostics out of the repository. Build from source, never patch a compiled bundle. Any change after audit invalidates the relevant review and checksums.
 
+## Versioning
+
+Follow docs/VERSIONING.md. Record user-visible changes in CHANGELOG.md under Unreleased, use package.json as the version source, and regenerate dependent artifacts when preparing a candidate. Run check:version before submitting. Do not create or move release tags or publish packages as a side effect of a merge; publication needs explicit authorization and completed release checks.
+
 ## Public identifiers and private data
 
 Keep the stable plugin namespace `io.streamdex.plugin` aligned across the manifest, actions, profiles, build, installer and checksums. It is a public software identifier, not a user account, filesystem path or device binding. Do not rename it as cosmetic anonymization. Preserve copyright and upstream notices; use project-neutral names in instructions, metadata and fictional examples. Personal author credit belongs only in README.md and required license notices. The canonical repository/Pages URLs may include their actual GitHub owner. Do not hardcode the creator's personal handle into plugin IDs, build paths or fixtures. Owner-generated commits may use the project identity or the approved public GitHub identity with a noreply email. Contributors should use public-safe Git identities.

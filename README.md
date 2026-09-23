@@ -82,4 +82,4 @@ The [contribution guide](CONTRIBUTING.md) covers local checks, branches, and pul
 
 Streamdex is a personal experiment by **Daniel Sack ([@danielsack](https://github.com/danielsack))**, built on **Todd Dailey's [streamdeckcodex](https://github.com/twidtwid/streamdeckcodex)**. Todd's task tracking, command bridge, and native targeting form the foundation. Streamdex adds the task-card design, Mobile/Plus layouts, Voice controls, persistent read state, lighting presets, setup kit, and demo.
 
-[MIT license](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Build guide](docs/BUILD.md)
+[MIT license](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Build guide](docs/BUILD.md) · [Changelog](CHANGELOG.md)

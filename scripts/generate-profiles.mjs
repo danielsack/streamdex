@@ -1,8 +1,10 @@
 import { mkdirSync, writeFileSync } from "node:fs";
+import { readVersion } from "./version.mjs";
 import { createHash } from "node:crypto";
 import { resolve, join } from "node:path";
 const root = resolve(import.meta.dirname, ".."),
   UUID = "io.streamdex.plugin";
+const { pluginVersion } = readVersion(root);
 const id = (name) => {
   const h = createHash("sha256")
     .update("streamdex:v1:" + name)
@@ -18,7 +20,7 @@ function action(name, settings = {}, kind = "workdesk", image = "") {
     ActionID: id(name + JSON.stringify(settings)),
     LinkedTitle: false,
     Name: name,
-    Plugin: { Name: "Streamdex", UUID, Version: "0.1.0.1" },
+    Plugin: { Name: "Streamdex", UUID, Version: pluginVersion },
     Resources: null,
     Settings: settings,
     State: 0,
