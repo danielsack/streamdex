@@ -13,7 +13,8 @@ export function parseVersion(value) {
     /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-beta\.([1-9]\d*))?$/.exec(
       value,
     );
-  if (!match) throw Error("Use MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-beta.N");
+  if (!match || match[0] !== value)
+    throw Error("Use MAJOR.MINOR.PATCH or MAJOR.MINOR.PATCH-beta.N");
   const parts = match.slice(1, 4).map(Number);
   const revision = match[4] === undefined ? 65535 : Number(match[4]);
   if (

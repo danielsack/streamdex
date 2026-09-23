@@ -48,6 +48,8 @@ test("beta candidates precede stable versions in Stream Deck's numeric ordering"
     "65536.0.0",
     "1.2.3-rc.1",
     "1.2.3+build",
+    "1.2.3\n",
+    "1.2.3-beta.2\n",
     "../other",
   ])
     assert.throws(() => parseVersion(value));
