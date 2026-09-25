@@ -1,6 +1,6 @@
 import {
   appendFileSync,
-  existsSync,
+  rmSync,
   mkdtempSync,
   readFileSync,
   renameSync,
@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
-import { CodexStore, resolveStateDatabase } from "../src/lib/codex-store.js";
+import { CodexStore } from "../src/lib/codex-store.js";
 import { parseRolloutEvents } from "../src/lib/rollout-status.js";
 
 describe("local Codex state integration", () => {
@@ -73,6 +73,7 @@ describe("local Codex state integration", () => {
       };
     });
     const store = new CodexStore({
+      codexHome: root,
       databasePath,
       activeThreadId: () => "focused",
       liveComposerReader: reader,
@@ -128,28 +129,61 @@ describe("local Codex state integration", () => {
     }
   });
 
-  it.runIf(existsSync(resolveStateDatabase()))(
-    "reads recent threads without writing to Codex state",
-    () => {
-      const store = new CodexStore();
+  it("reads recent fixture tasks without changing the database or rollout", () => {
+    const root = mkdtempSync(join(tmpdir(), "streamdex-readonly-store-"));
+    const databasePath = join(root, "state.sqlite");
+    const rollout = join(root, "rollout-fictional.jsonl");
+    writeFileSync(
+      rollout,
+      JSON.stringify({
+        type: "event_msg",
+        payload: { type: "task_complete" },
+        timestamp: new Date().toISOString(),
+      }),
+    );
+    const database = new DatabaseSync(databasePath);
+    database.exec(`
+      CREATE TABLE threads (
+        id TEXT PRIMARY KEY, rollout_path TEXT, cwd TEXT, title TEXT,
+        preview TEXT, recency_at_ms INTEGER, reasoning_effort TEXT,
+        model TEXT, archived INTEGER
+      );
+      CREATE TABLE thread_spawn_edges (child_thread_id TEXT, status TEXT);
+    `);
+    database
+      .prepare(
+        `INSERT INTO threads VALUES
+      ('fictional-task', ?, '/workspace/demo', 'Review draft', 'Draft ready', ?, 'medium', 'demo-model', 0)
+    `,
+      )
+      .run(rollout, Date.now());
+    database.close();
+    const beforeDatabase = readFileSync(databasePath);
+    const beforeRollout = readFileSync(rollout);
+    const store = new CodexStore({
+      codexHome: root,
+      databasePath,
+      activeThreadId: () => undefined,
+    });
+    try {
+      expect(store.recentThreads(3)).toMatchObject([
+        {
+          id: "fictional-task",
+          title: "Review draft",
+          rolloutPath: rollout,
+          status: "unread",
+        },
+      ]);
+    } finally {
+      store.close();
       try {
-        const threads = store.recentThreads(3);
-        expect(threads.length).toBeGreaterThan(0);
-        expect(threads[0]?.id).toMatch(/^[0-9a-f-]+$/i);
-        expect(threads[0]?.rolloutPath).toContain("rollout-");
-        expect([
-          "idle",
-          "unread",
-          "thinking",
-          "running",
-          "needs-input",
-          "error",
-        ]).toContain(threads[0]?.status);
+        expect(readFileSync(databasePath)).toEqual(beforeDatabase);
+        expect(readFileSync(rollout)).toEqual(beforeRollout);
       } finally {
-        store.close();
+        rmSync(root, { recursive: true, force: true });
       }
-    },
-  );
+    }
+  });
 
   it("projects the exact focused row outside the 12-row list and fails closed for archived or missing rows", async () => {
     const root = mkdtempSync(join(tmpdir(), "streamdeck-focused-row-"));
@@ -190,6 +224,7 @@ describe("local Codex state integration", () => {
     database.close();
 
     const focused = new CodexStore({
+      codexHome: root,
       databasePath,
       activeThreadId: () => "focused",
       liveComposerReader: async () => ({
@@ -200,10 +235,12 @@ describe("local Codex state integration", () => {
       }),
     });
     const archived = new CodexStore({
+      codexHome: root,
       databasePath,
       activeThreadId: () => "archived",
     });
     const missing = new CodexStore({
+      codexHome: root,
       databasePath,
       activeThreadId: () => "missing",
     });
@@ -256,7 +293,9 @@ describe("local Codex state integration", () => {
     let reads = 0;
     let parses = 0;
     const store = new CodexStore({
+      codexHome: root,
       databasePath,
+      activeThreadId: () => undefined,
       rolloutReader: (path) => {
         reads += 1;
         return readFileSync(path, "utf8");
@@ -347,6 +386,7 @@ describe("local Codex state integration", () => {
 
     let reads = 0;
     const store = new CodexStore({
+      codexHome: root,
       databasePath,
       activeThreadId: () => "thread",
       rolloutReader: (path) => {
@@ -418,6 +458,7 @@ describe("local Codex state integration", () => {
     // An empty string is what readFileTail returns on a transient read error.
     let failing = true;
     const store = new CodexStore({
+      codexHome: root,
       databasePath,
       activeThreadId: () => "thread",
       rolloutReader: (path) => (failing ? "" : readFileSync(path, "utf8")),
@@ -468,6 +509,7 @@ describe("local Codex state integration", () => {
     let reads = 0;
     let parses = 0;
     const store = new CodexStore({
+      codexHome: root,
       databasePath,
       activeThreadId: () => activeId,
       rolloutReader: (path) => {

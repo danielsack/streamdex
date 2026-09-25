@@ -28,17 +28,26 @@
   "scripts": {
     "build": "node scripts/build.mjs",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run",
-    "test:custom": "node --test test/custom/*.test.mjs",
+    "test": "npm run test:fast",
+    "test:custom": "node scripts/test-custom.mjs all",
     "pack": "node scripts/package.mjs",
     "audit:local": "node scripts/audit.mjs",
-    "check": "npm run typecheck && npm run check:docs && npm run test:audit && npm run build && npm run pack && npm run check:version && npm test && npm run test:custom && npm run audit:local",
-    "test:fast": "vitest run --project unit",
+    "check": "npm run check:full",
+    "test:fast": "vitest run --project unit && node scripts/test-custom.mjs fast",
     "test:audit": "python3 -m unittest discover -s test -p 'audit_test.py' -v",
     "check:docs": "node scripts/check-docs.mjs",
     "audit:source": "node scripts/audit.mjs --source-only",
     "version:set": "node scripts/version.mjs",
-    "check:version": "node scripts/check-version.mjs"
+    "check:version": "node scripts/check-version.mjs",
+    "build:js": "node scripts/build.mjs js",
+    "build:native": "node scripts/build.mjs native",
+    "build:profiles": "node scripts/build.mjs profiles",
+    "test:all": "vitest run && npm run test:custom",
+    "test:tasks": "vitest run --project unit test/agent-navigator.test.ts test/focused-target.test.ts test/live-approval-status.test.ts test/local-store.integration.test.ts test/rollout-status.test.ts test/render-cache.test.ts test/session-status-colors.test.ts && node scripts/test-custom.mjs tasks",
+    "test:voice": "vitest run test/dictation-lifecycle.test.ts test/input-release-guard.test.ts test/ptt-guard.test.ts && node scripts/test-custom.mjs voice",
+    "test:install": "node scripts/test-custom.mjs install",
+    "check:quick": "npm run typecheck && npm run check:docs && npm test",
+    "check:full": "npm run typecheck && npm run check:docs && npm run test:audit && npm run build && npm run pack && npm run check:version && npm run test:all && npm run audit:local"
   },
   "dependencies": {
     "@elgato/streamdeck": "2.1.2"
