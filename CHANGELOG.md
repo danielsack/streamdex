@@ -4,6 +4,12 @@ User-visible changes are recorded here. Versions follow [Semantic Versioning](ht
 
 ## [Unreleased]
 
+### Changed
+
+- Local tests default to the fast suite, with focused task, Voice and installation commands. Full checks remain required in GitHub Actions.
+- JavaScript, native helpers and profiles can be built separately during development.
+- The task-store read-only test uses disposable fictional data instead of discovering a local Codex database.
+
 ## [0.1.0-beta.2] - 2026-09-24
 
 ### Fixed

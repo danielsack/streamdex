@@ -14,6 +14,14 @@ Run ./streamdex-setup install with zero, one, or two --light HOST arguments. The
 
 For development, follow docs/BUILD.md. Tests use fictional tasks and disposable roots only. Do not run live acceptance actions against the user's current conversation. Keep runtime state, backups, private matching lists, audit details and browser diagnostics out of the repository. Build from source, never patch a compiled bundle. Any change after audit invalidates the relevant review and checksums.
 
+## Proportionate verification
+
+Use `npm run check:quick` or a focused test command while iterating. `npm test` includes fast TypeScript and custom controller tests; task and Voice changes have `test:tasks` and `test:voice` commands. Run the checks relevant to changed behavior and broaden only for shared-code changes, failures or unresolved risks. Do not rerun a passing full suite after every small edit or add tests that merely repeat implementation details.
+
+Use `build:js`, `build:native` or `build:profiles` for local component changes. GitHub's required Build and test job always runs `check:full`. Run that full check locally for build/test infrastructure changes and before an explicitly authorized candidate installation. Partial builds and automated fixture tests do not establish physical-device compatibility. Select physical checks that exercise the changed device behavior, and keep connection failures separate from software-test results.
+
+Keep the pre-push privacy gate: audit the exact staged source/payload before every push. Use the full kit audit when payload artifacts change; source-only auditing is sufficient for source/tests/docs changes with an unchanged payload. Never run normal tests against a discovered personal database or live application. Use fictional data, explicit fixture paths and mocked external controls.
+
 ## Versioning
 
 Follow docs/VERSIONING.md. Record user-visible changes in CHANGELOG.md under Unreleased, use package.json as the version source, and regenerate dependent artifacts when preparing a candidate. Run check:version before submitting. Do not create or move release tags or publish packages as a side effect of a merge; publication needs explicit authorization and completed release checks.

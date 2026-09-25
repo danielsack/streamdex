@@ -40,7 +40,7 @@ jobs:
           test "$(uname -m)" = arm64
           printf 'DEVELOPER_DIR=%s\n' "$(xcode-select -p)" >> "$GITHUB_ENV"
       - name: Build, test, package, and audit
-        run: npm run check
+        run: npm run check:full
 
   publish-demo:
     name: Publish demo
