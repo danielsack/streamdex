@@ -71,6 +71,7 @@
     "native/Fixtures.swift",
     "native/Models.swift",
     "native/Targeting.swift",
+    "native/TaskNavigation.swift",
     "native/WorkdeskControls.swift",
     "native/main.swift",
     "native/setup/main.swift",

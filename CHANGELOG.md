@@ -6,6 +6,8 @@ User-visible changes are recorded here. Versions follow [Semantic Versioning](ht
 
 ### Fixed
 
+- Task navigation waits for Codex to receive focus before opening a task and briefly retries exact-target confirmation while its window settles.
+
 - Long task titles and project labels no longer block button handling during repeated redraws on Mobile and Stream Deck+.
 
 ### Changed

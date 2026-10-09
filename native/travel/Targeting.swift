@@ -661,20 +661,22 @@ func focusCodex(_ app: NSRunningApplication, appElement: AXUIElement, threadId: 
     guard let threadId else {
         throw ControlError.failed("A focused Codex task ID is required for mutation.")
     }
-    let cursor = desktopLogCursor()
-    guard let url = URL(string: "codex://threads/\(threadId)"), NSWorkspace.shared.open(url) else {
-        throw ControlError.failed("Could not open the target Codex task.")
-    }
-    if !isCodexFrontmost(app) {
-        guard app.activate() else {
-            throw ControlError.failed("Could not bring Codex to the foreground.")
+    let focusedWitness = try navigateToFocusedTask(
+        threadId: threadId,
+        isFrontmost: { isCodexFrontmost(app) },
+        activate: { requestCodexForeground(app) },
+        focusedWindowAvailable: { (try? uniqueFocusedCodexWindow(appElement)) != nil },
+        captureCursor: desktopLogCursor,
+        openTarget: {
+            guard let url = URL(string: "codex://threads/\(threadId)") else { return false }
+            return NSWorkspace.shared.open(url)
+        },
+        observe: { freshWitness(threadId: threadId, after: $0) },
+        confirm: { witness in
+            guard let token = try? encodeWitnessToken(witness) else { return false }
+            return (try? verifyCurrentTarget(app, appElement: appElement, token: token)) != nil
         }
-    }
-    guard let focusedWitness = waitUntil(timeout: 3.0, operation: {
-        freshWitness(threadId: threadId, after: cursor)
-    }) else {
-        throw ControlError.failed("Codex emitted no fresh focused task/window witness after navigation.")
-    }
+    )
     if navigationOnly {
         // Opening a task does not require locating its composer or inspecting
         // conversation controls. Verify current task/window identity only.
