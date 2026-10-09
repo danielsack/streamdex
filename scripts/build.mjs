@@ -51,6 +51,8 @@ function buildNative() {
       )
       .sort()
       .map((f) => join(dir, f));
+    if (name === "travel-ui-control")
+      sources.push(join("native", "TaskNavigation.swift"));
     const target =
       name === "streamdex-setup"
         ? join(root, name)

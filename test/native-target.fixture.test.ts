@@ -108,6 +108,62 @@ function evaluate(
   return result.status;
 }
 
+describe("native focus-before-navigation fixture", () => {
+  function navigate(scenario: string) {
+    const result = spawnSync(native, ["--navigation-order-fixture", scenario], {
+      encoding: "utf8",
+      timeout: 5000,
+    });
+    expect(result.error).toBeUndefined();
+    expect(result.status).toBe(0);
+    return JSON.parse(result.stdout);
+  }
+
+  it("opens only after foreground/window focus and confirms settling windows", () => {
+    for (const scenario of [
+      "foreground",
+      "background",
+      "background-current",
+      "settling",
+    ]) {
+      const result = navigate(scenario);
+      expect(result.ok, scenario).toBe(true);
+      expect(result.capturedBeforeActivation, scenario).toBe(true);
+      expect(result.openedWhileFocused, scenario).toBe(true);
+      expect(result.activations).toBe(
+        scenario.startsWith("background") ? 1 : 0,
+      );
+      expect(result.opens).toBe(scenario === "background-current" ? 0 : 1);
+      expect(result.elapsedMs).toBeLessThan(500);
+      if (scenario === "settling")
+        expect(result.confirmations).toBeGreaterThan(1);
+    }
+  });
+
+  it("never opens without focus and rejects missing, wrong or changed targets within bounds", () => {
+    const noOpen = ["activation-denied", "focus-timeout", "ambiguous-window"];
+    for (const scenario of [
+      ...noOpen,
+      "no-witness",
+      "wrong-task",
+      "changed-target",
+      "lost-focus",
+      "open-failed",
+    ]) {
+      const result = navigate(scenario);
+      expect(result.ok, scenario).toBe(false);
+      expect(result.opens, scenario).toBe(noOpen.includes(scenario) ? 0 : 1);
+      expect(result.reason).toBe(
+        ["changed-target", "lost-focus"].includes(scenario)
+          ? "TARGET_MISMATCH"
+          : "NO_FOCUS",
+      );
+      expect(result.elapsedMs).toBeLessThan(3200);
+      if (scenario === "wrong-task") expect(result.confirmations).toBe(0);
+    }
+  });
+});
+
 describe("native exact-target fixture", () => {
   it("discovers the newest logs with one metadata read per candidate and observes later file changes", () => {
     const root = mkdtempSync(join(tmpdir(), "streamdex-log-discovery-"));

@@ -1704,6 +1704,79 @@ func runFixtureAction(_ action: String, arguments: [String]) {
         )
     }
 
+    if action == "--navigation-order-fixture" {
+        let scenario = arguments.dropFirst().first ?? ""
+        let scenarios: Set<String> = ["foreground", "background", "background-current", "settling", "activation-denied", "focus-timeout", "ambiguous-window", "no-witness", "wrong-task", "changed-target", "lost-focus", "open-failed"]
+        guard scenarios.contains(scenario) else { exit(1) }
+        let background = ["background", "background-current", "activation-denied", "focus-timeout"].contains(scenario)
+        var clock: TimeInterval = 0
+        var activations = 0, opens = 0, confirmations = 0
+        var captured = false, capturedBeforeActivation = true, openedWhileFocused = true
+        var openedAt: TimeInterval?
+        var emittedAt: TimeInterval?
+        func frontmost() -> Bool {
+            if scenario == "lost-focus", emittedAt != nil { return false }
+            return !background || (activations > 0 && clock >= 0.08 && scenario != "focus-timeout")
+        }
+        func focused() -> Bool {
+            scenario != "ambiguous-window" && frontmost() && (!background || clock >= 0.2)
+        }
+        let witness = DesktopWitness(
+            conversationId: scenario == "wrong-task" ? "task-b" : "task-a",
+            rendererWindowId: "window-a", path: "", cursor: 1, fileIdentity: "fixture"
+        )
+        var succeeded = false, reason = ""
+        do {
+            let result = try navigateToFocusedTask(
+                threadId: "task-a",
+                isFrontmost: frontmost,
+                activate: {
+                    capturedBeforeActivation = captured
+                    activations += 1
+                    return scenario != "activation-denied"
+                },
+                focusedWindowAvailable: focused,
+                captureCursor: { captured = true; return DesktopLogCursor(snapshots: [:]) },
+                openTarget: {
+                    opens += 1
+                    openedWhileFocused = focused()
+                    openedAt = clock
+                    return scenario != "open-failed"
+                },
+                observe: { _ in
+                    if scenario == "background-current" && focused() { return witness }
+                    guard scenario != "no-witness", openedWhileFocused,
+                          let openedAt, clock >= openedAt + 0.04 else { return nil }
+                    emittedAt = emittedAt ?? clock
+                    return witness
+                },
+                confirm: { candidate in
+                    confirmations += 1
+                    guard candidate == witness, candidate.conversationId == "task-a",
+                          focused(), scenario != "changed-target" else { return false }
+                    return scenario != "settling" || clock >= (openedAt ?? 0) + 0.28
+                },
+                now: { clock },
+                pause: { clock += 0.04 }
+            )
+            succeeded = result.conversationId == "task-a"
+        } catch ControlError.failed(_, let code) {
+            reason = code
+        } catch {
+            reason = "unexpected"
+        }
+        let data = try! JSONSerialization.data(withJSONObject: [
+            "ok": succeeded, "reason": reason, "activations": activations,
+            "opens": opens, "confirmations": confirmations,
+            "capturedBeforeActivation": capturedBeforeActivation,
+            "openedWhileFocused": openedWhileFocused,
+            "elapsedMs": Int((clock * 1000).rounded()),
+        ], options: [.sortedKeys])
+        FileHandle.standardOutput.write(data)
+        FileHandle.standardOutput.write(Data([10]))
+        exit(0)
+    }
+
     if action == "--target-fixture" {
         let fixture = Array(arguments.dropFirst())
         let logState = fixture.indices.contains(0) ? fixture[0] : "timeout"
