@@ -4,6 +4,10 @@ User-visible changes are recorded here. Versions follow [Semantic Versioning](ht
 
 ## [Unreleased]
 
+### Fixed
+
+- Long task titles and project labels no longer block button handling during repeated redraws on Mobile and Stream Deck+.
+
 ### Changed
 
 - Local tests default to the fast suite, with focused task, Voice and installation commands. Full checks remain required in GitHub Actions.

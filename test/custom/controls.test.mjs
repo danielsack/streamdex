@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { spawnSync } from "node:child_process";
 import {
   createReadLedger,
   projectName,
@@ -19,7 +20,11 @@ import {
   touchSide,
   sameContext,
 } from "../../src/custom/plus-v2.mjs";
-import { taskSvg } from "../../src/custom/travel-visuals.mjs";
+import {
+  fit,
+  measuredWidth,
+  taskSvg,
+} from "../../src/custom/travel-visuals.mjs";
 const logger = { warn() {}, info() {} };
 const baseTask = {
   id: "task-a",
@@ -198,6 +203,54 @@ test("status animation retains status color and separates RUN from SEEN", () => 
   assert.match(seen, /#929292/);
   assert.match(error, /#301F25/);
   assert.notEqual(run, taskSvg({ ...baseTask, status: "running" }, 1, 1500));
+});
+test("labels retain whitespace normalization, Unicode and exact-width boundaries", () => {
+  assert.equal(fit("  Short\n task  "), "Short task");
+  for (const char of ["a", "é", "😀"]) {
+    for (const size of [16, 18, 24]) {
+      const exact = measuredWidth(char.repeat(2) + "…", size);
+      assert.equal(fit(char.repeat(6), size, exact), char.repeat(2) + "…");
+      assert.equal(fit(char.repeat(6), size, exact - 0.00001), char + "…");
+      assert.equal(
+        fit(char.repeat(2), size, measuredWidth(char.repeat(2), size)),
+        char.repeat(2),
+      );
+    }
+  }
+  assert.equal(fit("Long label", 16, 0), "…");
+  assert.equal(fit(null), "");
+});
+test("long task and context labels render within an isolated time budget", () => {
+  // A separate process gives this regression a real timeout even if a
+  // synchronous renderer blocks its event loop. No live task data is used.
+  const moduleURL = new URL(
+    "../../src/custom/travel-visuals.mjs",
+    import.meta.url,
+  ).href;
+  const result = spawnSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "-e",
+      `
+    import assert from "node:assert/strict";
+    import { taskSvg, controlSvg } from ${JSON.stringify(moduleURL)};
+    const title = "Review a fictional draft ".repeat(2000);
+    const task = { title, projectName: "Example project ".repeat(2000), status: "running" };
+    const pair = { threadId: "task-a", slot: 1, title, detail: "", left: { operation: "open", label: "OPEN TASK" } };
+    for (let frame = 0; frame < 30; frame++) {
+      for (const svg of [taskSvg(task, 1, frame * 125), controlSvg(pair, "left")]) {
+        assert.ok(svg.endsWith("</svg>"));
+        assert.ok(svg.length < 5000);
+        assert.ok(svg.includes("…"));
+      }
+    }
+  `,
+    ],
+    { timeout: 5000, encoding: "utf8" },
+  );
+  assert.equal(result.error, undefined, result.error?.message);
+  assert.equal(result.status, 0, result.stderr);
 });
 test("touch coordinate guard rejects strip headings and out-of-bounds taps", () => {
   assert.equal(touchSide({ tapPos: [10, 10] }), undefined);

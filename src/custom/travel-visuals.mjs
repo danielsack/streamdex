@@ -34,16 +34,27 @@ const esc = (s) =>
         "'": "&apos;",
       })[c],
   );
-export const measuredWidth = (s, size) =>
-  ([...String(s)].reduce((n, c) => n + (widths[c] ?? 1000), 0) * size) / 1000;
+export function measuredWidth(s, size) {
+  let units = 0;
+  for (const char of String(s)) units += widths[char] ?? 1000;
+  return (units * size) / 1000;
+}
 export function fit(s, size = 16, width = 120) {
   s = String(s ?? "")
     .replace(/\s+/g, " ")
     .trim();
   if (measuredWidth(s, size) <= width) return s;
-  while (s && measuredWidth(s + "…", size) > width)
-    s = [...s].slice(0, -1).join("");
-  return s + "…";
+  // Keep font units until the final comparison so exact-width labels retain
+  // the same rounding as measuredWidth. Never rescan a shrinking long title.
+  const ellipsis = widths["…"] ?? 1000;
+  let units = 0,
+    prefix = "";
+  for (const char of s) {
+    units += widths[char] ?? 1000;
+    if (((units + ellipsis) * size) / 1000 > width) break;
+    prefix += char;
+  }
+  return prefix + "…";
 }
 export function lines(title, size = 24, width = 120) {
   let words = String(title ?? "")

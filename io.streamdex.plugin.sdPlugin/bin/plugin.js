@@ -20704,13 +20704,22 @@ var esc2 = (s) => String(s ?? "").replace(
     "'": "&apos;"
   })[c]
 );
-var measuredWidth = (s, size) => [...String(s)].reduce((n, c) => n + (widths[c] ?? 1e3), 0) * size / 1e3;
+function measuredWidth(s, size) {
+  let units = 0;
+  for (const char of String(s)) units += widths[char] ?? 1e3;
+  return units * size / 1e3;
+}
 function fit(s, size = 16, width = 120) {
   s = String(s ?? "").replace(/\s+/g, " ").trim();
   if (measuredWidth(s, size) <= width) return s;
-  while (s && measuredWidth(s + "\u2026", size) > width)
-    s = [...s].slice(0, -1).join("");
-  return s + "\u2026";
+  const ellipsis = widths["\u2026"] ?? 1e3;
+  let units = 0, prefix = "";
+  for (const char of s) {
+    units += widths[char] ?? 1e3;
+    if ((units + ellipsis) * size / 1e3 > width) break;
+    prefix += char;
+  }
+  return prefix + "\u2026";
 }
 function lines(title, size = 24, width = 120) {
   let words2 = String(title ?? "").trim().split(/\s+/), out = [], current = "";
