@@ -20337,9 +20337,9 @@ function createRefreshCoordinator(callback, intervalMs, onError, setIntervalFn =
           await callback();
           lastErrorFingerprint = void 0;
         } catch (error40) {
-          const fingerprint = errorFingerprint(error40);
-          if (fingerprint !== lastErrorFingerprint) onError(error40);
-          lastErrorFingerprint = fingerprint;
+          const fingerprint2 = errorFingerprint(error40);
+          if (fingerprint2 !== lastErrorFingerprint) onError(error40);
+          lastErrorFingerprint = fingerprint2;
         }
       } while (!stopped && queued);
     })().finally(() => {
@@ -20366,6 +20366,76 @@ function createRefreshCoordinator(callback, intervalMs, onError, setIntervalFn =
 
 // src/custom/travel-pilot.mjs
 init_define_STREAMDECK_CODEX_BUILD();
+
+// src/custom/codex-read-state.mjs
+init_define_STREAMDECK_CODEX_BUILD();
+import { openSync as openSync3, readSync as readSync3, closeSync as closeSync3, statSync as statSync4 } from "node:fs";
+var MAX_STATE_BYTES = 8 * 1024 * 1024;
+function boundedRead(path5) {
+  const fd = openSync3(path5, "r");
+  try {
+    const buffer = Buffer.alloc(MAX_STATE_BYTES + 1);
+    let length = 0;
+    while (length < buffer.length) {
+      const n = readSync3(fd, buffer, length, buffer.length - length, null);
+      if (!n) break;
+      length += n;
+    }
+    if (length > MAX_STATE_BYTES) throw Error("State exceeds read budget");
+    return buffer.toString("utf8", 0, length);
+  } finally {
+    closeSync3(fd);
+  }
+}
+var fingerprint = (s) => [s.dev, s.ino, s.size, s.mtimeMs, s.ctimeMs].join(":");
+function localUnread(state) {
+  const s = state?.["electron-thread-read-state-v1"];
+  if (s?.version !== 1 || !s.unreadByIdentity || typeof s.unreadByIdentity !== "object")
+    return;
+  const identities = Object.keys(s.unreadByIdentity), m = s.legacyMigration;
+  if (identities.length !== 1 || m?.identityKey !== identities[0]) return;
+  const host = m?.adoptedHostIds?.local;
+  if (typeof host !== "string" || !host.startsWith("local:")) return;
+  const ids = s.unreadByIdentity[identities[0]]?.[host];
+  if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) return;
+  return new Set(ids);
+}
+function projectRead(task, unread, modifiedAt, now = Date.now()) {
+  if (!task || !unread || !["read", "unread"].includes(task.status))
+    return task;
+  const at = task.completedAt;
+  if (!Number.isFinite(at) || at <= 0 || at > modifiedAt || now - at < 3e3)
+    return task;
+  return { ...task, status: unread.has(task.id) ? "unread" : "read" };
+}
+function createCodexReadResolver(path5, { now = Date.now, read = boundedRead, stat = statSync4 } = {}) {
+  let next = 0, unread, modifiedAt = 0, cached2;
+  return (task) => {
+    if (path5 && now() >= next) {
+      next = now() + 1e3;
+      try {
+        const before = stat(path5), key = fingerprint(before);
+        if (!Number.isFinite(before.size) || before.size < 0 || before.size > MAX_STATE_BYTES)
+          throw Error("State exceeds read budget");
+        if (key !== cached2) {
+          const text4 = read(path5, "utf8");
+          if (Buffer.byteLength(text4, "utf8") > MAX_STATE_BYTES)
+            throw Error("State exceeds read budget");
+          const state = JSON.parse(text4), after = stat(path5);
+          if (key !== fingerprint(after)) throw Error("Changed during read");
+          unread = localUnread(state);
+          modifiedAt = after.mtimeMs;
+          cached2 = key;
+        }
+      } catch {
+        unread = void 0;
+        modifiedAt = 0;
+        cached2 = void 0;
+      }
+    }
+    return projectRead(task, unread, modifiedAt, now());
+  };
+}
 
 // src/custom/travel-native.mjs
 init_define_STREAMDECK_CODEX_BUILD();
@@ -20419,7 +20489,7 @@ import { fileURLToPath as fileURLToPath3 } from "node:url";
 
 // src/custom/travel-requests.mjs
 init_define_STREAMDECK_CODEX_BUILD();
-import { openSync as openSync3, closeSync as closeSync3, readSync as readSync3, fstatSync as fstatSync2, statSync as statSync4 } from "node:fs";
+import { openSync as openSync4, closeSync as closeSync4, readSync as readSync4, fstatSync as fstatSync2, statSync as statSync5 } from "node:fs";
 var decode = (value) => {
   if (typeof value !== "string") return value;
   try {
@@ -20540,7 +20610,7 @@ function createRequestReader() {
     const key = task.id ?? task.rolloutPath;
     let fd;
     try {
-      const stat = statSync4(task.rolloutPath);
+      const stat = statSync5(task.rolloutPath);
       let entry = cache.get(key);
       if (!entry || entry.path !== task.rolloutPath || entry.ino !== stat.ino || entry.dev !== stat.dev || stat.size < entry.offset || stat.size === entry.offset && stat.mtimeMs !== entry.mtimeMs)
         entry = {
@@ -20557,10 +20627,10 @@ function createRequestReader() {
       while (cache.size > 32) cache.delete(cache.keys().next().value);
       if (entry.offset === stat.size && entry.mtimeMs === stat.mtimeMs)
         return entry.tracker.read();
-      fd = openSync3(task.rolloutPath, "r");
+      fd = openSync4(task.rolloutPath, "r");
       const size = fstatSync2(fd).size;
       while (entry.offset < size) {
-        const chunk = Buffer.alloc(Math.min(CHUNK, size - entry.offset)), n = readSync3(fd, chunk, 0, chunk.length, entry.offset);
+        const chunk = Buffer.alloc(Math.min(CHUNK, size - entry.offset)), n = readSync4(fd, chunk, 0, chunk.length, entry.offset);
         if (!n) break;
         entry.offset += n;
         const data = Buffer.concat([entry.tail, chunk.subarray(0, n)]);
@@ -20589,7 +20659,7 @@ function createRequestReader() {
       cache.delete(key);
       return void 0;
     } finally {
-      if (fd !== void 0) closeSync3(fd);
+      if (fd !== void 0) closeSync4(fd);
     }
   };
 }
@@ -20876,7 +20946,7 @@ import {
   writeFileSync,
   mkdirSync,
   renameSync,
-  statSync as statSync5,
+  statSync as statSync6,
   realpathSync as realpathSync2
 } from "node:fs";
 import { dirname as dirname3, basename as basename2, resolve as resolve4 } from "node:path";
@@ -20962,7 +21032,7 @@ function createProjectResolver(path5) {
     if (path5 && Date.now() - last > 4e3) {
       last = Date.now();
       try {
-        const s = statSync5(path5), next = s.size + ":" + s.mtimeMs;
+        const s = statSync6(path5), next = s.size + ":" + s.mtimeMs;
         if (next !== identity) {
           cached2 = JSON.parse(readFileSync5(path5, "utf8"));
           identity = next;
@@ -21146,7 +21216,10 @@ function installTravelPilot(deps) {
       `Travel restored ${ledger.restore(store)} read acknowledgements`
     );
   const requestFor = deps.requestFor || createRequestReader();
-  const withRequest = (task) => task ? { ...task, pendingRequest: requestFor(task) } : task;
+  const resolveRead = createCodexReadResolver(
+    store.codexHome ? join5(store.codexHome, ".codex-global-state.json") : void 0
+  );
+  const withRequest = (task) => task ? { ...resolveRead(task), pendingRequest: requestFor(task) } : task;
   const resolveProject = deps.projectName || createProjectResolver(
     store.codexHome ? join5(store.codexHome, ".codex-global-state.json") : void 0
   );
@@ -21427,8 +21500,17 @@ function installTravelPilot(deps) {
     timing.waitMs = navigationAt - startedAt;
     const opened = await readControl("navigate", id);
     timing.navigationMs = monotonicNow() - navigationAt;
-    if (!opened.ok || opened.threadId !== id || !opened.windowId)
+    if (opened.ok === false && opened.dispatched === true && opened.reason === "focus-unavailable" && opened.threadId === id) {
+      timing.confirmed = false;
+      appOffline = false;
+      return timing;
+    }
+    if (!opened.ok || opened.threadId !== id || !opened.windowId) {
+      const reason = ["dispatch-timeout", "rejected", "invalid", "helper-timeout", "accessibility"].includes(opened.reason) ? opened.reason : "unverified";
+      logger2.warn("Travel navigation rejected: " + reason);
       throw new Error("Task navigation was not confirmed");
+    }
+    timing.confirmed = true;
     frame.selection = { threadId: id, windowId: opened.windowId, at: now() };
     appOffline = false;
     nextNativeReadAt = 0;
@@ -21452,7 +21534,7 @@ function installTravelPilot(deps) {
       if (snapshot) {
         await navigate(snapshot.id, timing);
         confirmedAt = monotonicNow();
-        ledger.record(snapshot, store);
+        if (timing.confirmed) ledger.record(snapshot, store);
       } else await openNewChat2(store.latestThread()?.cwd);
       store.invalidate();
       success2 = true;
@@ -21473,7 +21555,7 @@ function installTravelPilot(deps) {
       }
       const displayedAt = monotonicNow();
       logger2.info(
-        "Travel navigation timing: outcome=" + (success2 ? "confirmed" : "failed") + " waitMs=" + Math.round(timing?.waitMs || 0) + " navigationMs=" + Math.round(timing?.navigationMs || 0) + " displayMs=" + Math.round(
+        "Travel navigation timing: outcome=" + (success2 ? timing.confirmed === false ? "dispatched-unverified" : "confirmed" : "failed") + " waitMs=" + Math.round(timing?.waitMs || 0) + " navigationMs=" + Math.round(timing?.navigationMs || 0) + " displayMs=" + Math.round(
           confirmedAt === void 0 ? 0 : displayedAt - confirmedAt
         ) + " totalMs=" + Math.round(displayedAt - startedAt)
       );

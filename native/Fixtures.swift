@@ -1704,6 +1704,28 @@ func runFixtureAction(_ action: String, arguments: [String]) {
         )
     }
 
+    if action == "--dispatch-task-fixture" {
+        let valid = "00000000-0000-4000-8000-000000000001"
+        var urls: [String] = []
+        var clock: TimeInterval = 0
+        var completion: ((Bool) -> Void)?
+        // Simulate an app taking longer than the old one-second focus limit.
+        let accepted = dispatchTaskLink(threadId: valid, open: { url, done in
+            urls.append(url.absoluteString); completion = done
+        }, now: { clock }, pause: {
+            clock += 0.02
+            if clock >= 1.3 { completion?(true); completion = nil }
+        })
+        let malformed = dispatchTaskLink(threadId: "bad?prompt=anything", open: { _, _ in urls.append("invalid") })
+        let rejected = dispatchTaskLink(threadId: valid, open: { _, done in done(false) })
+        clock = 0
+        let timeout = dispatchTaskLink(threadId: valid, open: { _, _ in }, now: { clock }, pause: { clock += 0.02 })
+        let passed = accepted == .accepted && malformed == .invalid && rejected == .rejected
+            && timeout == .timedOut && clock < 2.6 && urls == ["codex://threads/" + valid]
+        print(passed ? "dispatch fixture passed" : "dispatch fixture failed")
+        exit(passed ? 0 : 1)
+    }
+
     if action == "--navigation-order-fixture" {
         let scenario = arguments.dropFirst().first ?? ""
         let scenarios: Set<String> = ["foreground", "background", "background-current", "settling", "activation-denied", "focus-timeout", "ambiguous-window", "no-witness", "wrong-task", "changed-target", "lost-focus", "open-failed"]

@@ -102,6 +102,20 @@ do {
     if command == "navigate" {
         guard UUID(uuidString: threadId) != nil else { output(["ok":false,"reason":"arguments"],code:1) }
         AXUIElementSetMessagingTimeout(appElement, 0.25)
+        // New app versions may emit host activity without renderer identity.
+        // A deep-link dispatch is useful navigation, but is never read/control proof.
+        if globallyCurrentWitness(in: desktopLogFiles(), scoped: true) == nil {
+            let result = dispatchTaskLink(threadId: threadId, open: { url, complete in
+                guard let applicationURL = app.bundleURL else { complete(false); return }
+                let configuration = NSWorkspace.OpenConfiguration()
+                configuration.activates = true
+                NSWorkspace.shared.open([url], withApplicationAt: applicationURL, configuration: configuration) { openedApp, error in
+                    complete(openedApp != nil && error == nil)
+                }
+            })
+            output(["ok":false,"dispatched":result == .accepted,"appRunning":true,"threadId":threadId,
+                    "reason":result == .accepted ? "focus-unavailable" : result.rawValue])
+        }
         let target: TargetContext
         if let current = try? captureCurrentCodex(app, appElement:appElement, threadId:threadId),
            (try? verifyCurrentTarget(app, appElement:appElement, token:encodeWitnessToken(current.witness))) != nil {

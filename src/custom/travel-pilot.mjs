@@ -1,3 +1,4 @@
+import { createCodexReadResolver } from "./codex-read-state.mjs";
 import { createNativeCaller } from "./travel-native.mjs";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
@@ -250,8 +251,13 @@ export function installTravelPilot(deps) {
       `Travel restored ${ledger.restore(store)} read acknowledgements`,
     );
   const requestFor = deps.requestFor || createRequestReader();
+  const resolveRead = createCodexReadResolver(
+    store.codexHome
+      ? join(store.codexHome, ".codex-global-state.json")
+      : undefined,
+  );
   const withRequest = (task) =>
-    task ? { ...task, pendingRequest: requestFor(task) } : task;
+    task ? { ...resolveRead(task), pendingRequest: requestFor(task) } : task;
   const resolveProject =
     deps.projectName ||
     createProjectResolver(
@@ -624,8 +630,23 @@ export function installTravelPilot(deps) {
     timing.waitMs = navigationAt - startedAt;
     const opened = await readControl("navigate", id);
     timing.navigationMs = monotonicNow() - navigationAt;
-    if (!opened.ok || opened.threadId !== id || !opened.windowId)
+    if (
+      opened.ok === false &&
+      opened.dispatched === true &&
+      opened.reason === "focus-unavailable" &&
+      opened.threadId === id
+    ) {
+      // Dispatch is not selection proof. No ledger write or control authority.
+      timing.confirmed = false;
+      appOffline = false;
+      return timing;
+    }
+    if (!opened.ok || opened.threadId !== id || !opened.windowId) {
+      const reason = ["dispatch-timeout", "rejected", "invalid", "helper-timeout", "accessibility"].includes(opened.reason) ? opened.reason : "unverified";
+      logger.warn("Travel navigation rejected: " + reason);
       throw new Error("Task navigation was not confirmed");
+    }
+    timing.confirmed = true;
     frame.selection = { threadId: id, windowId: opened.windowId, at: now() };
     appOffline = false;
     nextNativeReadAt = 0;
@@ -652,7 +673,7 @@ export function installTravelPilot(deps) {
       if (snapshot) {
         await navigate(snapshot.id, timing);
         confirmedAt = monotonicNow();
-        ledger.record(snapshot, store);
+        if (timing.confirmed) ledger.record(snapshot, store);
       } else await openNewChat(store.latestThread()?.cwd);
       store.invalidate();
       success = true;
@@ -676,7 +697,11 @@ export function installTravelPilot(deps) {
       logger.info(
         "Travel navigation timing: " +
           "outcome=" +
-          (success ? "confirmed" : "failed") +
+          (success
+            ? timing.confirmed === false
+              ? "dispatched-unverified"
+              : "confirmed"
+            : "failed") +
           " waitMs=" +
           Math.round(timing?.waitMs || 0) +
           " navigationMs=" +

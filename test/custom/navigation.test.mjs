@@ -138,6 +138,13 @@ for (const owner of ["agentStatus", "workdesk", "commandHandler"]) {
 test("failed or mismatched navigation never marks any response SEEN", async (t) => {
   for (const response of [
     { ok: false, reason: "helper-timeout" },
+    {
+      ok: false,
+      dispatched: true,
+      reason: "focus-unavailable",
+      threadId: "task-b",
+    },
+    { ok: false, dispatched: false, reason: "open-failed", threadId: "task-a" },
     { ok: true, threadId: "task-b", windowId: "window-b" },
     { ok: true, threadId: "task-a" },
   ]) {
@@ -358,4 +365,22 @@ test("failed navigation retains elapsed helper time in the timing log", async (t
     ),
   );
   assert.equal(f.snapshot().status, "unread");
+});
+
+test("unverified dispatch neither acknowledges nor authorizes the requested task", async (t) => {
+  const f = fixture(t);
+  await f.mount();
+  f.navigate(async (id) => ({
+    ok: false,
+    dispatched: true,
+    reason: "focus-unavailable",
+    threadId: id,
+  }));
+  await f.press();
+  assert.deepEqual(f.acknowledged, {});
+  assert.equal(f.ledger.seenAt("task-a"), 0);
+  assert.equal(f.frame().selection, undefined);
+  assert.equal(f.pair().verified, false);
+  assert.ok(f.logs.some((line) => line.includes("dispatched-unverified")));
+  assert.ok(!f.logs.some((line) => line.includes("selection failed")));
 });

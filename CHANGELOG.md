@@ -6,6 +6,11 @@ User-visible changes are recorded here. Versions follow [Semantic Versioning](ht
 
 ### Fixed
 
+- Activate the app and deliver the chat link in one OS request, so a slow foreground transition does not discard the first press.
+
+- Completed task cards follow the app's saved read state using bounded, cached reads.
+- Task links open without waiting for unavailable focus events. An unverified open never marks a task read or enables chat-specific controls.
+
 - Task navigation waits for Codex to receive focus before opening a task and briefly retries exact-target confirmation while its window settles.
 
 - Long task titles and project labels no longer block button handling during repeated redraws on Mobile and Stream Deck+.

@@ -69,3 +69,31 @@ func navigateToFocusedTask(
     }
     return witness
 }
+
+// Ask the OS to activate the target app and deliver the URL in ONE request.
+// Acceptance is not focused-chat proof and cannot authorize acknowledgements.
+enum TaskLinkDispatchResult: String {
+    case accepted, invalid, rejected, timedOut = "dispatch-timeout"
+}
+func dispatchTaskLink(
+    threadId: String,
+    open: (URL, @escaping (Bool) -> Void) -> Void,
+    now: () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+    pause: () -> Void = { RunLoop.current.run(until: Date().addingTimeInterval(0.02)) }
+) -> TaskLinkDispatchResult {
+    guard UUID(uuidString: threadId) != nil,
+          let url = URL(string: "codex://threads/\(threadId)") else { return .invalid }
+    let lock = NSLock()
+    var accepted: Bool?
+    func response() -> Bool? {
+        lock.lock(); defer { lock.unlock() }
+        return accepted
+    }
+    open(url) { value in
+        lock.lock(); accepted = value; lock.unlock()
+    }
+    let deadline = now() + 2.5
+    while response() == nil && now() < deadline { pause() }
+    guard let accepted = response() else { return .timedOut }
+    return accepted ? .accepted : .rejected
+}
