@@ -25,3 +25,18 @@
 - A nontechnical person completes the installation walkthrough.
 
 Record publicly shareable app versions, pass/fail, date, and a redacted description for each check. The development build identifier is retained only in private local evidence until its release channel is established; no Codex version is claimed as hardware-validated here. Do not publish real task content as proof. Only after these checks, artifact review, and owner approval may publication proceed.
+
+## Navigation without renderer focus events
+
+Some app versions no longer provide the focused chat/window event used by the
+native verifier. In that case, a task key dispatches the exact chat link and
+reports an unverified open. Dispatch does not prove the chat is displayed and
+never writes the read ledger or enables chat-specific actions. Those actions
+remain unavailable until exact focus can be verified.
+
+Completed cards can use the app's persisted local unread state when its schema,
+single-account identity, and local-host binding are recognized. Unknown or
+ambiguous state falls back to the existing ledger. New completions retain a
+short grace period; files over 8 MB are ignored, and unchanged files are cached.
+Check correct-chat navigation and read-state synchronization on both devices
+with the app both foregrounded and backgrounded before claiming compatibility.

@@ -69,3 +69,12 @@ func navigateToFocusedTask(
     }
     return witness
 }
+
+// This returns dispatch acceptance only. It must never authorize a mutation or
+// acknowledgement; the URL handler may still reject or delay navigation.
+func dispatchTaskLink(threadId: String, activate: () -> Bool, open: (URL) -> Bool) -> Bool {
+    guard UUID(uuidString: threadId) != nil,
+          let url = URL(string: "codex://threads/\(threadId)"),
+          activate() else { return false }
+    return open(url)
+}

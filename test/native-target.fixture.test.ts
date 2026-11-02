@@ -564,3 +564,11 @@ describe("native exact-target fixture", () => {
     },
   );
 });
+
+it("dispatch validates the exact task link without claiming focus", () => {
+  const result = spawnSync(native, ["--dispatch-task-fixture"], {
+    encoding: "utf8",
+  });
+  expect(result.status).toBe(0);
+  expect(result.stdout).toContain("dispatch fixture passed");
+});

@@ -1704,6 +1704,19 @@ func runFixtureAction(_ action: String, arguments: [String]) {
         )
     }
 
+    if action == "--dispatch-task-fixture" {
+        let valid = "00000000-0000-4000-8000-000000000001"
+        var urls: [String] = []
+        let open: (URL) -> Bool = { urls.append($0.absoluteString); return true }
+        let accepted = dispatchTaskLink(threadId: valid, activate: { true }, open: open)
+        let malformed = dispatchTaskLink(threadId: "bad?prompt=anything", activate: { true }, open: open)
+        let inactive = dispatchTaskLink(threadId: valid, activate: { false }, open: open)
+        let rejected = dispatchTaskLink(threadId: valid, activate: { true }, open: { _ in false })
+        let passed = accepted && !malformed && !inactive && !rejected && urls == ["codex://threads/" + valid]
+        print(passed ? "dispatch fixture passed" : "dispatch fixture failed")
+        exit(passed ? 0 : 1)
+    }
+
     if action == "--navigation-order-fixture" {
         let scenario = arguments.dropFirst().first ?? ""
         let scenarios: Set<String> = ["foreground", "background", "background-current", "settling", "activation-denied", "focus-timeout", "ambiguous-window", "no-witness", "wrong-task", "changed-target", "lost-focus", "open-failed"]

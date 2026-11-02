@@ -102,6 +102,22 @@ do {
     if command == "navigate" {
         guard UUID(uuidString: threadId) != nil else { output(["ok":false,"reason":"arguments"],code:1) }
         AXUIElementSetMessagingTimeout(appElement, 0.25)
+        // New app versions may emit host activity without renderer identity.
+        // A deep-link dispatch is useful navigation, but is never read/control proof.
+        if globallyCurrentWitness(in: desktopLogFiles(), scoped: true) == nil {
+            let dispatched = dispatchTaskLink(
+                threadId: threadId,
+                activate: {
+                    guard isCodexFrontmost(app) || requestCodexForeground(app) else { return false }
+                    return waitUntil(timeout: 1.0, operation: {
+                        isCodexFrontmost(app) && (try? uniqueFocusedCodexWindow(appElement)) != nil ? true : nil
+                    }) != nil
+                },
+                open: { NSWorkspace.shared.open($0) }
+            )
+            output(["ok":false,"dispatched":dispatched,"appRunning":true,"threadId":threadId,
+                    "reason":dispatched ? "focus-unavailable" : "open-failed"])
+        }
         let target: TargetContext
         if let current = try? captureCurrentCodex(app, appElement:appElement, threadId:threadId),
            (try? verifyCurrentTarget(app, appElement:appElement, token:encodeWitnessToken(current.witness))) != nil {

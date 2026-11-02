@@ -8,7 +8,7 @@ const selectors = {
   all: () => true,
   fast: (name) => name !== "installer.test.mjs",
   tasks: (name) =>
-    /^(controls|navigation|polling|request.*)\.test\.mjs$/.test(name),
+    /^(controls|navigation|polling|read-state|request.*)\.test\.mjs$/.test(name),
   voice: (name) => name === "voice.test.mjs",
   install: (name) => /^(installer|profiles|version)\.test\.mjs$/.test(name),
 };
