@@ -105,18 +105,16 @@ do {
         // New app versions may emit host activity without renderer identity.
         // A deep-link dispatch is useful navigation, but is never read/control proof.
         if globallyCurrentWitness(in: desktopLogFiles(), scoped: true) == nil {
-            let dispatched = dispatchTaskLink(
-                threadId: threadId,
-                activate: {
-                    guard isCodexFrontmost(app) || requestCodexForeground(app) else { return false }
-                    return waitUntil(timeout: 1.0, operation: {
-                        isCodexFrontmost(app) && (try? uniqueFocusedCodexWindow(appElement)) != nil ? true : nil
-                    }) != nil
-                },
-                open: { NSWorkspace.shared.open($0) }
-            )
-            output(["ok":false,"dispatched":dispatched,"appRunning":true,"threadId":threadId,
-                    "reason":dispatched ? "focus-unavailable" : "open-failed"])
+            let result = dispatchTaskLink(threadId: threadId, open: { url, complete in
+                guard let applicationURL = app.bundleURL else { complete(false); return }
+                let configuration = NSWorkspace.OpenConfiguration()
+                configuration.activates = true
+                NSWorkspace.shared.open([url], withApplicationAt: applicationURL, configuration: configuration) { openedApp, error in
+                    complete(openedApp != nil && error == nil)
+                }
+            })
+            output(["ok":false,"dispatched":result == .accepted,"appRunning":true,"threadId":threadId,
+                    "reason":result == .accepted ? "focus-unavailable" : result.rawValue])
         }
         let target: TargetContext
         if let current = try? captureCurrentCodex(app, appElement:appElement, threadId:threadId),

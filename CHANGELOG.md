@@ -6,6 +6,8 @@ User-visible changes are recorded here. Versions follow [Semantic Versioning](ht
 
 ### Fixed
 
+- Activate the app and deliver the chat link in one OS request, so a slow foreground transition does not discard the first press.
+
 - Completed task cards follow the app's saved read state using bounded, cached reads.
 - Task links open without waiting for unavailable focus events. An unverified open never marks a task read or enables chat-specific controls.
 

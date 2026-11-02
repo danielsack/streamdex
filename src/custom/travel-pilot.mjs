@@ -641,8 +641,11 @@ export function installTravelPilot(deps) {
       appOffline = false;
       return timing;
     }
-    if (!opened.ok || opened.threadId !== id || !opened.windowId)
+    if (!opened.ok || opened.threadId !== id || !opened.windowId) {
+      const reason = ["dispatch-timeout", "rejected", "invalid", "helper-timeout", "accessibility"].includes(opened.reason) ? opened.reason : "unverified";
+      logger.warn("Travel navigation rejected: " + reason);
       throw new Error("Task navigation was not confirmed");
+    }
     timing.confirmed = true;
     frame.selection = { threadId: id, windowId: opened.windowId, at: now() };
     appOffline = false;

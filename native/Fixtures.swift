@@ -1707,12 +1707,21 @@ func runFixtureAction(_ action: String, arguments: [String]) {
     if action == "--dispatch-task-fixture" {
         let valid = "00000000-0000-4000-8000-000000000001"
         var urls: [String] = []
-        let open: (URL) -> Bool = { urls.append($0.absoluteString); return true }
-        let accepted = dispatchTaskLink(threadId: valid, activate: { true }, open: open)
-        let malformed = dispatchTaskLink(threadId: "bad?prompt=anything", activate: { true }, open: open)
-        let inactive = dispatchTaskLink(threadId: valid, activate: { false }, open: open)
-        let rejected = dispatchTaskLink(threadId: valid, activate: { true }, open: { _ in false })
-        let passed = accepted && !malformed && !inactive && !rejected && urls == ["codex://threads/" + valid]
+        var clock: TimeInterval = 0
+        var completion: ((Bool) -> Void)?
+        // Simulate an app taking longer than the old one-second focus limit.
+        let accepted = dispatchTaskLink(threadId: valid, open: { url, done in
+            urls.append(url.absoluteString); completion = done
+        }, now: { clock }, pause: {
+            clock += 0.02
+            if clock >= 1.3 { completion?(true); completion = nil }
+        })
+        let malformed = dispatchTaskLink(threadId: "bad?prompt=anything", open: { _, _ in urls.append("invalid") })
+        let rejected = dispatchTaskLink(threadId: valid, open: { _, done in done(false) })
+        clock = 0
+        let timeout = dispatchTaskLink(threadId: valid, open: { _, _ in }, now: { clock }, pause: { clock += 0.02 })
+        let passed = accepted == .accepted && malformed == .invalid && rejected == .rejected
+            && timeout == .timedOut && clock < 2.6 && urls == ["codex://threads/" + valid]
         print(passed ? "dispatch fixture passed" : "dispatch fixture failed")
         exit(passed ? 0 : 1)
     }
