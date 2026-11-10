@@ -14,7 +14,9 @@ function fixture() {
     status: "running",
     lastEventAt: now,
   };
-  let broken = false;
+  let broken = false,
+    liveRequest;
+  const subscriptions = [];
   let response = {
     ok: true,
     appRunning: true,
@@ -42,6 +44,11 @@ function fixture() {
     agentStatus,
     settingsTargets: {},
     requestFor: (t) => t.pendingRequest,
+    liveInput: {
+      requestFor: () => liveRequest,
+      update: (ids) => subscriptions.push(ids),
+      stop() {},
+    },
     projectName: () => "Example project",
     readLedger: { record: (t) => acknowledgements.push(t), restore: () => 0 },
     renderKey: async (a, svg) => images.set(a.id, svg),
@@ -58,6 +65,10 @@ function fixture() {
   const control = { id: "context-key", isKey: () => true };
   return {
     pilot,
+    liveRequest: (request) => {
+      liveRequest = request;
+    },
+    subscriptions,
     logs,
     calls,
     images,
@@ -303,4 +314,33 @@ test("a slow Voice fallback cannot extend the age of a verified action", async (
   await poll;
   assert.equal(f.pair().left.operation, "open");
   assert.equal(f.pair().verified, false);
+});
+
+test("live approvals redraw cards and clear without native polling or read acknowledgements", async (t) => {
+  const f = fixture();
+  t.after(() => f.pilot.stop());
+  await f.mount();
+  f.response({
+    ok: true,
+    appRunning: true,
+    threadId: "task-a",
+    kind: "running",
+    choices: [],
+  });
+  await f.pilot.poll();
+  const reads = f.calls.length;
+  f.liveRequest({
+    id: "request-b",
+    kind: "approval",
+    title: "Permission required in Codex",
+  });
+  await f.pilot.poll({ localOnly: true });
+  assert.equal(f.status(), "needs-input");
+  assert.equal(f.pair().left.operation, "open");
+  assert(f.subscriptions.at(-1).includes("task-a"));
+  f.liveRequest(undefined);
+  await f.pilot.poll({ localOnly: true });
+  assert.equal(f.status(), "running");
+  assert.equal(f.calls.length, reads);
+  assert.equal(f.acknowledgements.length, 0);
 });
