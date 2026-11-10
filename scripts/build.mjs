@@ -113,6 +113,7 @@ async function buildJavaScript() {
     "ws",
     "zod",
     "lucide-static",
+    "stream-json",
   ];
   writeFileSync(
     join(plugin, "THIRD_PARTY_LICENSES.txt"),

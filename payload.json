@@ -2,11 +2,11 @@
   "version": "0.1.0-beta.2",
   "files": {
     "io.streamdex.plugin.sdPlugin/LICENSE.txt": "d8f5d890043937ea0dd49267f8d0eaba07e6fd0ca388c4c4e969577b7ba33abc",
-    "io.streamdex.plugin.sdPlugin/THIRD_PARTY_LICENSES.txt": "26685348ab9e61550870c1975d003a3fb14470df2bca7a87bc02b6c4737ece7f",
+    "io.streamdex.plugin.sdPlugin/THIRD_PARTY_LICENSES.txt": "144b1e98ffaf736543d09d44412be76613aeb62b783d77ed93d529cdb4a759b1",
     "io.streamdex.plugin.sdPlugin/bin/codex-ui-control": "12c9b9c957ed1a531e9ea2d5179ff8f9c5d765f67719d8dc4f12efbbd23ecb1c",
     "io.streamdex.plugin.sdPlugin/bin/font-metrics.json": "00d1caf3d6b0634f47792426b168ccee2e6a771b287f66bdd47f2064cce832e1",
     "io.streamdex.plugin.sdPlugin/bin/icons.json": "23d7a008044164c19a8d4a0dbe3da2ce75807d221828ffcc7b2b32b27ada9155",
-    "io.streamdex.plugin.sdPlugin/bin/plugin.js": "bb4ba896b28b38f71a377d624013fc60758143635b13f6d8cd8462bae6aca314",
+    "io.streamdex.plugin.sdPlugin/bin/plugin.js": "2d4826bbf7e3369c605621fc920f41f04e81ddd9b0c4b4e0e7c0e5db4713d06c",
     "io.streamdex.plugin.sdPlugin/bin/travel-ui-control": "62d02bf9fc3b808fc614ab3b549c93785a66da3f5c4c28146640856f731dbf0b",
     "io.streamdex.plugin.sdPlugin/bin/voice-control": "2b1d69e72e70c5571ed397ecb891a34692125d2605fd5acea1493ff2ae69133e",
     "io.streamdex.plugin.sdPlugin/imgs/actions/agent.svg": "9f32b454e4c539dde0bd4358fd53ba24fd02b40e522b33a8cd1052df1280ac90",
@@ -19,9 +19,9 @@
     "io.streamdex.plugin.sdPlugin/manifest.json": "d5d3c48baae4fd56f3f3d7c17304fea23c65440948a199709d1bec2aedb161c4",
     "io.streamdex.plugin.sdPlugin/scripts/codex-control.applescript": "c4e746909b83bffee2d16a0d3f7d82d82f1a87b36b059bc8ba8846dc7e82b50e",
     "io.streamdex.plugin.sdPlugin/scripts/ptt-guard.mjs": "0294191bbb3634ae2ff106aed7d28193e31c077ef354ce78dfc522ca96e95399",
-    "io.streamdex.plugin.sdPlugin/streamdex-mobile.streamDeckProfile": "abcfce345a41ae16f8424368b775a18af198db040f7588e37fb7bc62989237c9",
-    "io.streamdex.plugin.sdPlugin/streamdex-plus.streamDeckProfile": "8e087f8e71324067742a7d84b957fabbb2da4298104d84afc0fecba71df0ac24",
-    "io.streamdex.plugin.streamDeckPlugin": "c423b43b319b349f09e110c5b9b517eb0643f8b9f4089c415fe821b01b1b6a35",
+    "io.streamdex.plugin.sdPlugin/streamdex-mobile.streamDeckProfile": "88443c4b27615cad3b260ceae587ed753d360d7b8813c902c2c7470deef9ea58",
+    "io.streamdex.plugin.sdPlugin/streamdex-plus.streamDeckProfile": "3b63b18887ffaeac91cffa8787668b6666068196a745b9a9002913fa47ef1819",
+    "io.streamdex.plugin.streamDeckPlugin": "e171a88ee9c7a029cfc22114b8d92d910f8bccc66a3dde653a601c9c3ce2736c",
     "streamdex-setup": "06041711154073dbd98dcea6e6d8d35737557a7bea150907abae39b23e7bab99"
   }
 }

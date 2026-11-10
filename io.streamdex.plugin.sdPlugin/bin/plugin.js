@@ -2346,7 +2346,7 @@ var require_websocket = __commonJS({
     var EventEmitter2 = __require("events");
     var https = __require("https");
     var http = __require("http");
-    var net = __require("net");
+    var net2 = __require("net");
     var tls = __require("tls");
     var { randomBytes, createHash } = __require("crypto");
     var { Duplex, Readable } = __require("stream");
@@ -3090,12 +3090,12 @@ var require_websocket = __commonJS({
     }
     function netConnect(options) {
       options.path = options.socketPath;
-      return net.connect(options);
+      return net2.connect(options);
     }
     function tlsConnect(options) {
       options.path = void 0;
       if (!options.servername && options.servername !== "") {
-        options.servername = net.isIP(options.host) ? "" : options.host;
+        options.servername = net2.isIP(options.host) ? "" : options.host;
       }
       return tls.connect(options);
     }
@@ -3779,6 +3779,586 @@ var require_websocket_server = __commonJS({
         abortHandshake(socket, code, message, headers);
       }
     }
+  }
+});
+
+// node_modules/stream-json/utils/Utf8Stream.js
+var require_Utf8Stream = __commonJS({
+  "node_modules/stream-json/utils/Utf8Stream.js"(exports, module) {
+    "use strict";
+    init_define_STREAMDECK_CODEX_BUILD();
+    var { Transform } = __require("stream");
+    var { StringDecoder } = __require("string_decoder");
+    var Utf8Stream = class extends Transform {
+      constructor(options) {
+        super(Object.assign({}, options, { writableObjectMode: false }));
+        this._buffer = "";
+      }
+      _transform(chunk, encoding, callback) {
+        if (typeof chunk == "string") {
+          this._transform = this._transformString;
+        } else {
+          this._stringDecoder = new StringDecoder();
+          this._transform = this._transformBuffer;
+        }
+        this._transform(chunk, encoding, callback);
+      }
+      _transformBuffer(chunk, _, callback) {
+        this._buffer += this._stringDecoder.write(chunk);
+        this._processBuffer(callback);
+      }
+      _transformString(chunk, _, callback) {
+        this._buffer += chunk.toString();
+        this._processBuffer(callback);
+      }
+      _processBuffer(callback) {
+        if (this._buffer) {
+          this.push(this._buffer, "utf8");
+          this._buffer = "";
+        }
+        callback(null);
+      }
+      _flushInput() {
+        if (this._stringDecoder) {
+          this._buffer += this._stringDecoder.end();
+        }
+      }
+      _flush(callback) {
+        this._flushInput();
+        this._processBuffer(callback);
+      }
+    };
+    module.exports = Utf8Stream;
+  }
+});
+
+// node_modules/stream-json/Parser.js
+var require_Parser = __commonJS({
+  "node_modules/stream-json/Parser.js"(exports, module) {
+    "use strict";
+    init_define_STREAMDECK_CODEX_BUILD();
+    var Utf8Stream = require_Utf8Stream();
+    var patterns = {
+      value1: /^(?:[\"\{\[\]\-\d]|true\b|false\b|null\b|\s{1,256})/,
+      string: /^(?:[^\x00-\x1f\"\\]{1,256}|\\[bfnrt\"\\\/]|\\u[\da-fA-F]{4}|\")/,
+      key1: /^(?:[\"\}]|\s{1,256})/,
+      colon: /^(?:\:|\s{1,256})/,
+      comma: /^(?:[\,\]\}]|\s{1,256})/,
+      ws: /^\s{1,256}/,
+      numberStart: /^\d/,
+      numberDigit: /^\d{0,256}/,
+      numberFraction: /^[\.eE]/,
+      numberExponent: /^[eE]/,
+      numberExpSign: /^[-+]/
+    };
+    var MAX_PATTERN_SIZE = 16;
+    var noSticky = true;
+    try {
+      new RegExp(".", "y");
+      noSticky = false;
+    } catch (e) {
+    }
+    !noSticky && Object.keys(patterns).forEach((key) => {
+      let src = patterns[key].source.slice(1);
+      if (src.slice(0, 3) === "(?:" && src.slice(-1) === ")") {
+        src = src.slice(3, -1);
+      }
+      patterns[key] = new RegExp(src, "y");
+    });
+    patterns.numberFracStart = patterns.numberExpStart = patterns.numberStart;
+    patterns.numberFracDigit = patterns.numberExpDigit = patterns.numberDigit;
+    var values = { true: true, false: false, null: null };
+    var expected = { object: "objectStop", array: "arrayStop", "": "done" };
+    var fromHex = (s) => String.fromCharCode(parseInt(s.slice(2), 16));
+    var codes = { b: "\b", f: "\f", n: "\n", r: "\r", t: "	", '"': '"', "\\": "\\", "/": "/" };
+    var Parser2 = class _Parser extends Utf8Stream {
+      static make(options) {
+        return new _Parser(options);
+      }
+      constructor(options) {
+        super(Object.assign({}, options, { readableObjectMode: true }));
+        this._packKeys = this._packStrings = this._packNumbers = this._streamKeys = this._streamStrings = this._streamNumbers = true;
+        if (options) {
+          "packValues" in options && (this._packKeys = this._packStrings = this._packNumbers = options.packValues);
+          "packKeys" in options && (this._packKeys = options.packKeys);
+          "packStrings" in options && (this._packStrings = options.packStrings);
+          "packNumbers" in options && (this._packNumbers = options.packNumbers);
+          "streamValues" in options && (this._streamKeys = this._streamStrings = this._streamNumbers = options.streamValues);
+          "streamKeys" in options && (this._streamKeys = options.streamKeys);
+          "streamStrings" in options && (this._streamStrings = options.streamStrings);
+          "streamNumbers" in options && (this._streamNumbers = options.streamNumbers);
+          this._jsonStreaming = options.jsonStreaming;
+        }
+        !this._packKeys && (this._streamKeys = true);
+        !this._packStrings && (this._streamStrings = true);
+        !this._packNumbers && (this._streamNumbers = true);
+        this._done = false;
+        this._expect = this._jsonStreaming ? "done" : "value";
+        this._stack = [];
+        this._parent = "";
+        this._open_number = false;
+        this._accumulator = "";
+      }
+      _flush(callback) {
+        this._done = true;
+        super._flush((error40) => {
+          if (error40) return callback(error40);
+          if (this._open_number) {
+            if (this._streamNumbers) {
+              this.push({ name: "endNumber" });
+            }
+            this._open_number = false;
+            if (this._packNumbers) {
+              this.push({ name: "numberValue", value: this._accumulator });
+              this._accumulator = "";
+            }
+          }
+          callback(null);
+        });
+      }
+      _processBuffer(callback) {
+        let match, value, index = 0;
+        main: for (; ; ) {
+          switch (this._expect) {
+            case "value1":
+            case "value":
+              patterns.value1.lastIndex = index;
+              match = patterns.value1.exec(this._buffer);
+              if (!match) {
+                if (this._done || index + MAX_PATTERN_SIZE < this._buffer.length) {
+                  if (index < this._buffer.length) return callback(new Error("Parser cannot parse input: expected a value"));
+                  return callback(new Error("Parser has expected a value"));
+                }
+                break main;
+              }
+              value = match[0];
+              switch (value) {
+                case '"':
+                  this._streamStrings && this.push({ name: "startString" });
+                  this._expect = "string";
+                  break;
+                case "{":
+                  this.push({ name: "startObject" });
+                  this._stack.push(this._parent);
+                  this._parent = "object";
+                  this._expect = "key1";
+                  break;
+                case "[":
+                  this.push({ name: "startArray" });
+                  this._stack.push(this._parent);
+                  this._parent = "array";
+                  this._expect = "value1";
+                  break;
+                case "]":
+                  if (this._expect !== "value1") return callback(new Error("Parser cannot parse input: unexpected token ']'"));
+                  if (this._open_number) {
+                    this._streamNumbers && this.push({ name: "endNumber" });
+                    this._open_number = false;
+                    if (this._packNumbers) {
+                      this.push({ name: "numberValue", value: this._accumulator });
+                      this._accumulator = "";
+                    }
+                  }
+                  this.push({ name: "endArray" });
+                  this._parent = this._stack.pop();
+                  this._expect = expected[this._parent];
+                  break;
+                case "-":
+                  this._open_number = true;
+                  if (this._streamNumbers) {
+                    this.push({ name: "startNumber" });
+                    this.push({ name: "numberChunk", value: "-" });
+                  }
+                  this._packNumbers && (this._accumulator = "-");
+                  this._expect = "numberStart";
+                  break;
+                case "0":
+                  this._open_number = true;
+                  if (this._streamNumbers) {
+                    this.push({ name: "startNumber" });
+                    this.push({ name: "numberChunk", value: "0" });
+                  }
+                  this._packNumbers && (this._accumulator = "0");
+                  this._expect = "numberFraction";
+                  break;
+                case "1":
+                case "2":
+                case "3":
+                case "4":
+                case "5":
+                case "6":
+                case "7":
+                case "8":
+                case "9":
+                  this._open_number = true;
+                  if (this._streamNumbers) {
+                    this.push({ name: "startNumber" });
+                    this.push({ name: "numberChunk", value });
+                  }
+                  this._packNumbers && (this._accumulator = value);
+                  this._expect = "numberDigit";
+                  break;
+                case "true":
+                case "false":
+                case "null":
+                  if (this._buffer.length - index === value.length && !this._done) break main;
+                  this.push({ name: value + "Value", value: values[value] });
+                  this._expect = expected[this._parent];
+                  break;
+              }
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "keyVal":
+            case "string":
+              patterns.string.lastIndex = index;
+              match = patterns.string.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length && (this._done || this._buffer.length - index >= 6))
+                  return callback(new Error("Parser cannot parse input: escaped characters"));
+                if (this._done) return callback(new Error("Parser has expected a string value"));
+                break main;
+              }
+              value = match[0];
+              if (value === '"') {
+                if (this._expect === "keyVal") {
+                  this._streamKeys && this.push({ name: "endKey" });
+                  if (this._packKeys) {
+                    this.push({ name: "keyValue", value: this._accumulator });
+                    this._accumulator = "";
+                  }
+                  this._expect = "colon";
+                } else {
+                  this._streamStrings && this.push({ name: "endString" });
+                  if (this._packStrings) {
+                    this.push({ name: "stringValue", value: this._accumulator });
+                    this._accumulator = "";
+                  }
+                  this._expect = expected[this._parent];
+                }
+              } else if (value.length > 1 && value.charAt(0) === "\\") {
+                const t = value.length == 2 ? codes[value.charAt(1)] : fromHex(value);
+                if (this._expect === "keyVal" ? this._streamKeys : this._streamStrings) {
+                  this.push({ name: "stringChunk", value: t });
+                }
+                if (this._expect === "keyVal" ? this._packKeys : this._packStrings) {
+                  this._accumulator += t;
+                }
+              } else {
+                if (this._expect === "keyVal" ? this._streamKeys : this._streamStrings) {
+                  this.push({ name: "stringChunk", value });
+                }
+                if (this._expect === "keyVal" ? this._packKeys : this._packStrings) {
+                  this._accumulator += value;
+                }
+              }
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "key1":
+            case "key":
+              patterns.key1.lastIndex = index;
+              match = patterns.key1.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected an object key"));
+                break main;
+              }
+              value = match[0];
+              if (value === '"') {
+                this._streamKeys && this.push({ name: "startKey" });
+                this._expect = "keyVal";
+              } else if (value === "}") {
+                if (this._expect !== "key1") return callback(new Error("Parser cannot parse input: unexpected token '}'"));
+                this.push({ name: "endObject" });
+                this._parent = this._stack.pop();
+                this._expect = expected[this._parent];
+              }
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "colon":
+              patterns.colon.lastIndex = index;
+              match = patterns.colon.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected ':'"));
+                break main;
+              }
+              value = match[0];
+              value === ":" && (this._expect = "value");
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "arrayStop":
+            case "objectStop":
+              patterns.comma.lastIndex = index;
+              match = patterns.comma.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected ','"));
+                break main;
+              }
+              if (this._open_number) {
+                this._streamNumbers && this.push({ name: "endNumber" });
+                this._open_number = false;
+                if (this._packNumbers) {
+                  this.push({ name: "numberValue", value: this._accumulator });
+                  this._accumulator = "";
+                }
+              }
+              value = match[0];
+              if (value === ",") {
+                this._expect = this._expect === "arrayStop" ? "value" : "key";
+              } else if (value === "}" || value === "]") {
+                if (value === "}" ? this._expect === "arrayStop" : this._expect !== "arrayStop") {
+                  return callback(new Error("Parser cannot parse input: expected '" + (this._expect === "arrayStop" ? "]" : "}") + "'"));
+                }
+                this.push({ name: value === "}" ? "endObject" : "endArray" });
+                this._parent = this._stack.pop();
+                this._expect = expected[this._parent];
+              }
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            // number chunks
+            case "numberStart":
+              patterns.numberStart.lastIndex = index;
+              match = patterns.numberStart.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected a starting digit"));
+                break main;
+              }
+              value = match[0];
+              this._streamNumbers && this.push({ name: "numberChunk", value });
+              this._packNumbers && (this._accumulator += value);
+              this._expect = value === "0" ? "numberFraction" : "numberDigit";
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "numberDigit":
+              patterns.numberDigit.lastIndex = index;
+              match = patterns.numberDigit.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected a digit"));
+                break main;
+              }
+              value = match[0];
+              if (value) {
+                this._streamNumbers && this.push({ name: "numberChunk", value });
+                this._packNumbers && (this._accumulator += value);
+                if (noSticky) {
+                  this._buffer = this._buffer.slice(value.length);
+                } else {
+                  index += value.length;
+                }
+              } else {
+                if (index < this._buffer.length) {
+                  this._expect = "numberFraction";
+                  break;
+                }
+                if (this._done) {
+                  this._expect = expected[this._parent];
+                  break;
+                }
+                break main;
+              }
+              break;
+            case "numberFraction":
+              patterns.numberFraction.lastIndex = index;
+              match = patterns.numberFraction.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length || this._done) {
+                  this._expect = expected[this._parent];
+                  break;
+                }
+                break main;
+              }
+              value = match[0];
+              this._streamNumbers && this.push({ name: "numberChunk", value });
+              this._packNumbers && (this._accumulator += value);
+              this._expect = value === "." ? "numberFracStart" : "numberExpSign";
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "numberFracStart":
+              patterns.numberFracStart.lastIndex = index;
+              match = patterns.numberFracStart.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected a fractional part of a number"));
+                break main;
+              }
+              value = match[0];
+              this._streamNumbers && this.push({ name: "numberChunk", value });
+              this._packNumbers && (this._accumulator += value);
+              this._expect = "numberFracDigit";
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "numberFracDigit":
+              patterns.numberFracDigit.lastIndex = index;
+              match = patterns.numberFracDigit.exec(this._buffer);
+              value = match[0];
+              if (value) {
+                this._streamNumbers && this.push({ name: "numberChunk", value });
+                this._packNumbers && (this._accumulator += value);
+                if (noSticky) {
+                  this._buffer = this._buffer.slice(value.length);
+                } else {
+                  index += value.length;
+                }
+              } else {
+                if (index < this._buffer.length) {
+                  this._expect = "numberExponent";
+                  break;
+                }
+                if (this._done) {
+                  this._expect = expected[this._parent];
+                  break;
+                }
+                break main;
+              }
+              break;
+            case "numberExponent":
+              patterns.numberExponent.lastIndex = index;
+              match = patterns.numberExponent.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length) {
+                  this._expect = expected[this._parent];
+                  break;
+                }
+                if (this._done) {
+                  this._expect = "done";
+                  break;
+                }
+                break main;
+              }
+              value = match[0];
+              this._streamNumbers && this.push({ name: "numberChunk", value });
+              this._packNumbers && (this._accumulator += value);
+              this._expect = "numberExpSign";
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "numberExpSign":
+              patterns.numberExpSign.lastIndex = index;
+              match = patterns.numberExpSign.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length) {
+                  this._expect = "numberExpStart";
+                  break;
+                }
+                if (this._done) return callback(new Error("Parser has expected an exponent value of a number"));
+                break main;
+              }
+              value = match[0];
+              this._streamNumbers && this.push({ name: "numberChunk", value });
+              this._packNumbers && (this._accumulator += value);
+              this._expect = "numberExpStart";
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "numberExpStart":
+              patterns.numberExpStart.lastIndex = index;
+              match = patterns.numberExpStart.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length || this._done) return callback(new Error("Parser cannot parse input: expected an exponent part of a number"));
+                break main;
+              }
+              value = match[0];
+              this._streamNumbers && this.push({ name: "numberChunk", value });
+              this._packNumbers && (this._accumulator += value);
+              this._expect = "numberExpDigit";
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+            case "numberExpDigit":
+              patterns.numberExpDigit.lastIndex = index;
+              match = patterns.numberExpDigit.exec(this._buffer);
+              value = match[0];
+              if (value) {
+                this._streamNumbers && this.push({ name: "numberChunk", value });
+                this._packNumbers && (this._accumulator += value);
+                if (noSticky) {
+                  this._buffer = this._buffer.slice(value.length);
+                } else {
+                  index += value.length;
+                }
+              } else {
+                if (index < this._buffer.length || this._done) {
+                  this._expect = expected[this._parent];
+                  break;
+                }
+                break main;
+              }
+              break;
+            case "done":
+              patterns.ws.lastIndex = index;
+              match = patterns.ws.exec(this._buffer);
+              if (!match) {
+                if (index < this._buffer.length) {
+                  if (this._jsonStreaming) {
+                    this._expect = "value";
+                    break;
+                  }
+                  return callback(new Error("Parser cannot parse input: unexpected characters"));
+                }
+                break main;
+              }
+              value = match[0];
+              if (this._open_number) {
+                this._streamNumbers && this.push({ name: "endNumber" });
+                this._open_number = false;
+                if (this._packNumbers) {
+                  this.push({ name: "numberValue", value: this._accumulator });
+                  this._accumulator = "";
+                }
+              }
+              if (noSticky) {
+                this._buffer = this._buffer.slice(value.length);
+              } else {
+                index += value.length;
+              }
+              break;
+          }
+        }
+        !noSticky && (this._buffer = this._buffer.slice(index));
+        callback(null);
+      }
+    };
+    Parser2.parser = Parser2.make;
+    Parser2.make.Constructor = Parser2;
+    module.exports = Parser2;
   }
 });
 
@@ -17602,7 +18182,7 @@ var plugin_default = streamDeck;
 // src/plugin.ts
 import { chmodSync as chmodSync2 } from "node:fs";
 import { fileURLToPath as fileURLToPath6 } from "node:url";
-import { join as join6 } from "node:path";
+import { join as join7 } from "node:path";
 
 // src/actions/workdesk.ts
 init_define_STREAMDECK_CODEX_BUILD();
@@ -20487,6 +21067,625 @@ function createNativeCaller(helper2, prefix = []) {
 // src/custom/travel-pilot.mjs
 import { fileURLToPath as fileURLToPath3 } from "node:url";
 
+// src/custom/codex-live-input.mjs
+init_define_STREAMDECK_CODEX_BUILD();
+import net from "node:net";
+import { lstatSync } from "node:fs";
+import { join as join5 } from "node:path";
+import { randomUUID as randomUUID3 } from "node:crypto";
+
+// src/custom/input-metadata.mjs
+init_define_STREAMDECK_CODEX_BUILD();
+var import_Parser = __toESM(require_Parser(), 1);
+var stateField = (path5) => {
+  if (!path5.length) return true;
+  if (["id", "hostId"].includes(path5[0])) return path5.length === 1;
+  if (path5[0] === "requests")
+    return path5.length <= 2 || path5.length === 3 && ["id", "method"].includes(path5[2]);
+  if (path5[0] === "threadRuntimeStatus")
+    return path5.length === 1 || path5.length === 2 && ["type", "activeFlags"].includes(path5[1]) || path5.length === 3 && path5[1] === "activeFlags";
+  return false;
+};
+function keep(path5, stack) {
+  if (!path5.length) return true;
+  if (path5.length === 1)
+    return [
+      "type",
+      "requestId",
+      "sourceClientId",
+      "targetClientIds",
+      "method",
+      "version",
+      "params",
+      "resultType",
+      "result",
+      "handledByClientId"
+    ].includes(path5[0]);
+  if (path5[0] === "result") return path5.length === 2 && path5[1] === "clientId";
+  if (path5[0] === "targetClientIds") return path5.length === 2;
+  if (path5[0] !== "params") return false;
+  if (path5.length === 2)
+    return [
+      "hostId",
+      "conversationId",
+      "change",
+      "status",
+      "clientId"
+    ].includes(path5[1]);
+  if (path5[1] !== "change") return false;
+  if (path5.length === 3)
+    return [
+      "type",
+      "revision",
+      "baseRevision",
+      "conversationState",
+      "patches"
+    ].includes(path5[2]);
+  if (path5[2] === "conversationState") return stateField(path5.slice(3));
+  if (path5[2] !== "patches") return false;
+  if (path5.length === 4) return true;
+  if (path5[4] === "op") return path5.length === 5;
+  if (path5[4] === "path") return path5.length <= 6;
+  if (path5[4] !== "value") return false;
+  const patch = stack.find(
+    (frame) => frame.path?.length === 4 && frame.path[2] === "patches" && frame.path[3] === path5[3]
+  )?.value;
+  if (!Array.isArray(patch?.path)) throw Error("patch-order");
+  return ["requests", "threadRuntimeStatus"].includes(patch.path[0]) && stateField([...patch.path, ...path5.slice(5)]);
+}
+function createInputMetadataParser() {
+  const parser = new import_Parser.default({ packValues: false, streamValues: true });
+  const stack = [];
+  let scalar, root, complete = false, error40, retained = 0;
+  const account = (size) => {
+    retained += size;
+    if (retained > 256 * 1024) throw Error("metadata-limit");
+  };
+  function location() {
+    const parent = stack.at(-1);
+    if (!parent) return [];
+    return parent.path ? [...parent.path, parent.array ? parent.index : parent.key] : null;
+  }
+  function finish(value, selected) {
+    const parent = stack.at(-1);
+    if (!parent) {
+      root = value;
+      complete = true;
+      return;
+    }
+    if (parent.path && selected) {
+      account(8);
+      if (parent.array) parent.value[parent.index] = value;
+      else parent.value[parent.key] = value;
+    }
+    if (parent.array) parent.index++;
+    else parent.key = void 0;
+  }
+  parser.on("data", (token) => {
+    if (error40) return;
+    try {
+      const { name, value } = token;
+      if (name === "startKey") {
+        scalar = { key: true, selected: !!stack.at(-1)?.path, text: "" };
+        return;
+      }
+      if (name === "startString" || name === "startNumber") {
+        const path5 = location();
+        scalar = {
+          selected: !!path5 && keep(path5, stack),
+          number: name === "startNumber",
+          text: ""
+        };
+        return;
+      }
+      if (name === "stringChunk" || name === "numberChunk") {
+        if (scalar?.selected) {
+          account(value.length);
+          scalar.text += value;
+          if (scalar.text.length > 4096) throw Error("scalar-limit");
+        }
+        return;
+      }
+      if (name === "endKey") {
+        stack.at(-1).key = scalar.selected ? scalar.text : void 0;
+        scalar = void 0;
+        return;
+      }
+      if (name === "endString" || name === "endNumber") {
+        finish(
+          scalar.number ? Number(scalar.text) : scalar.text,
+          scalar.selected
+        );
+        scalar = void 0;
+        return;
+      }
+      if (name === "startObject" || name === "startArray") {
+        if (stack.length >= 128) throw Error("depth-limit");
+        const path5 = location(), selected = !!path5 && keep(path5, stack), array2 = name === "startArray";
+        stack.push({
+          path: selected ? path5 : null,
+          value: selected ? array2 ? [] : /* @__PURE__ */ Object.create(null) : void 0,
+          array: array2,
+          index: 0
+        });
+        return;
+      }
+      if (name === "endObject" || name === "endArray") {
+        const frame = stack.pop();
+        finish(frame.value, !!frame.path);
+        return;
+      }
+      if (["nullValue", "trueValue", "falseValue"].includes(name)) {
+        const path5 = location();
+        finish(value, !!path5 && keep(path5, stack));
+      }
+    } catch (e) {
+      error40 = e;
+    }
+  });
+  parser.on("error", (e) => {
+    error40 = e;
+  });
+  return {
+    write(chunk) {
+      parser.write(chunk);
+      if (error40 || parser.errored) throw error40 || parser.errored;
+    },
+    finish() {
+      parser.end();
+      if (error40 || parser.errored) throw error40 || parser.errored;
+      if (!complete || stack.length) throw Error("incomplete-frame");
+      return root;
+    },
+    destroy() {
+      parser.destroy();
+    },
+    retainedBytes: () => retained,
+    route() {
+      const envelope = stack[0]?.value || root;
+      const params = stack.find(
+        (frame) => frame.path?.length === 1 && frame.path[0] === "params"
+      )?.value || envelope?.params;
+      return {
+        sourceClientId: envelope?.sourceClientId,
+        method: envelope?.method,
+        hostId: params?.hostId,
+        conversationId: params?.conversationId
+      };
+    }
+  };
+}
+
+// src/custom/codex-live-input.mjs
+var MAX_FRAME = 64 * 1024 * 1024;
+var VERSION = 11;
+var approvalMethods = /* @__PURE__ */ new Set([
+  "item/commandExecution/requestApproval",
+  "item/fileChange/requestApproval",
+  "item/permissions/requestApproval",
+  "mcpServer/elicitation/request"
+]);
+var questionMethods = /* @__PURE__ */ new Set([
+  "item/tool/requestUserInput",
+  "tool/requestUserInput"
+]);
+var uuid3 = (value) => typeof value === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
+var copyRequest = (r) => {
+  if (!r || typeof r.method !== "string" || !["string", "number"].includes(typeof r.id))
+    throw Error("request-schema");
+  return { id: r.id, method: r.method };
+};
+var copyRequests = (requests) => {
+  if (!Array.isArray(requests) || requests.length > 64)
+    throw Error("requests-schema");
+  return requests.map(copyRequest);
+};
+var copyStatus = (status) => {
+  if (status == null) return null;
+  if (!["active", "idle", "notLoaded", "systemError"].includes(status.type))
+    throw Error("status-schema");
+  if (status.type === "active" && (!Array.isArray(status.activeFlags) || status.activeFlags.some((v) => typeof v !== "string")))
+    throw Error("flags-schema");
+  return {
+    type: status.type,
+    activeFlags: status.type === "active" ? status.activeFlags.slice(0, 16) : []
+  };
+};
+function inputSnapshot(state, threadId) {
+  if (state?.id !== threadId || state.hostId !== "local")
+    throw Error("wrong-thread");
+  return {
+    requests: copyRequests(state.requests),
+    status: copyStatus(state.threadRuntimeStatus)
+  };
+}
+function inputPatches(previous, patches) {
+  if (!Array.isArray(patches) || patches.length > 1e4)
+    throw Error("patch-schema");
+  const next = {
+    requests: previous.requests.map((r) => ({ ...r })),
+    status: previous.status && {
+      ...previous.status,
+      activeFlags: [...previous.status.activeFlags]
+    }
+  };
+  for (const p of patches) {
+    if (!Array.isArray(p.path) || !["add", "remove", "replace"].includes(p.op) || !p.path.length)
+      throw Error("patch-schema");
+    const [root, index, field] = p.path;
+    if (root === "requests") {
+      if (p.path.length === 1) {
+        next.requests = p.op === "remove" ? [] : copyRequests(p.value);
+        continue;
+      }
+      if (!Number.isInteger(index) || index < 0 || index > next.requests.length || index >= 64)
+        throw Error("request-index");
+      if (p.path.length === 2) {
+        if (p.op === "add")
+          next.requests.splice(index, 0, copyRequest(p.value));
+        else {
+          if (index >= next.requests.length) throw Error("request-index");
+          if (p.op === "remove") next.requests.splice(index, 1);
+          else next.requests[index] = copyRequest(p.value);
+        }
+      } else if (field === "id" || field === "method") {
+        if (p.path.length !== 3 || p.op === "remove" || !next.requests[index])
+          throw Error("request-field");
+        next.requests[index] = copyRequest({
+          ...next.requests[index],
+          [field]: p.value
+        });
+      }
+      if (next.requests.length > 64) throw Error("request-limit");
+    } else if (root === "threadRuntimeStatus") {
+      if (p.path.length !== 1) throw Error("status-patch-schema");
+      next.status = p.op === "remove" ? null : copyStatus(p.value);
+    }
+  }
+  return next;
+}
+function pendingLiveInput(projection) {
+  if (!projection) return void 0;
+  for (const r of projection.requests) {
+    if (approvalMethods.has(r.method))
+      return {
+        id: String(r.id),
+        kind: "approval",
+        title: "Permission required in Codex"
+      };
+    if (questionMethods.has(r.method))
+      return {
+        id: String(r.id),
+        kind: "question",
+        title: "Input required in Codex"
+      };
+  }
+  const flags = projection.status?.type === "active" ? projection.status.activeFlags : [];
+  if (flags.includes("waitingOnApproval"))
+    return {
+      id: "runtime-approval",
+      kind: "approval",
+      title: "Permission required in Codex"
+    };
+  if (flags.includes("waitingOnUserInput"))
+    return {
+      id: "runtime-input",
+      kind: "question",
+      title: "Input required in Codex"
+    };
+  return void 0;
+}
+function createLiveInputObserver(codexHome, options = {}) {
+  const now = options.now || Date.now;
+  const connect = options.connect || ((path5) => net.createConnection(path5));
+  const socketPath = codexHome && join5(codexHome, "ipc", "ipc.sock");
+  const secure = options.secure || (() => {
+    const dir = lstatSync(join5(codexHome, "ipc")), file2 = lstatSync(socketPath);
+    return dir.isDirectory() && file2.isSocket() && dir.uid === process.getuid() && file2.uid === process.getuid() && !(dir.mode & 63) && !(file2.mode & 63);
+  });
+  const targets2 = /* @__PURE__ */ new Map(), outstanding = /* @__PURE__ */ new Map();
+  let socket, clientId, header = Buffer.alloc(0), body, remaining = 0, oversized = false, retryAt = 0, startedAt = 0, disposed = false;
+  let notificationQueued = false;
+  const changed = () => {
+    if (notificationQueued || disposed) return;
+    notificationQueued = true;
+    queueMicrotask(() => {
+      notificationQueued = false;
+      if (!disposed) options.onChange?.();
+    });
+  };
+  function clear(entry) {
+    const had = !!entry.projection;
+    entry.projection = void 0;
+    entry.revision = void 0;
+    entry.pending = void 0;
+    if (had) changed();
+  }
+  function drop(delay = 1e4) {
+    const old = socket;
+    socket = void 0;
+    clientId = void 0;
+    header = Buffer.alloc(0);
+    body?.destroy();
+    body = void 0;
+    remaining = 0;
+    outstanding.clear();
+    retryAt = now() + delay;
+    for (const entry of targets2.values()) {
+      clear(entry);
+      entry.owner = void 0;
+    }
+    old?.destroy();
+  }
+  function send(message) {
+    if (!socket?.writable || socket.writableLength > 65536) return false;
+    const value = Buffer.from(JSON.stringify(message)), prefix = Buffer.alloc(4);
+    prefix.writeUInt32LE(value.length);
+    socket.write(Buffer.concat([prefix, value]));
+    return true;
+  }
+  function following(id, entry, enabled) {
+    if (clientId && entry.owner)
+      send({
+        type: "broadcast",
+        method: "thread-stream-following-changed",
+        version: 1,
+        sourceClientId: clientId,
+        targetClientIds: [entry.owner],
+        params: { hostId: "local", conversationId: id, following: enabled }
+      });
+  }
+  function discover(id, entry) {
+    const requestId = randomUUID3();
+    entry.checkedAt = now();
+    outstanding.set(requestId, { id, entry, at: now() });
+    send({
+      type: "request",
+      requestId,
+      sourceClientId: clientId,
+      method: "thread-owner-discovery",
+      version: 1,
+      params: { hostId: "local", conversationId: id },
+      timeoutMs: 2500
+    });
+  }
+  function receive(m) {
+    if (m.type === "client-discovery-request") {
+      send({
+        type: "client-discovery-response",
+        requestId: m.requestId,
+        response: { canHandle: false }
+      });
+      return;
+    }
+    if (m.type === "response") {
+      if (m.requestId === "streamdex-initialize") {
+        if (m.resultType !== "success" || typeof m.result?.clientId !== "string") {
+          drop();
+          return;
+        }
+        clientId = m.result.clientId;
+        for (const [id2, entry3] of targets2) discover(id2, entry3);
+        return;
+      }
+      const pending = outstanding.get(m.requestId);
+      if (!pending) return;
+      outstanding.delete(m.requestId);
+      const entry2 = targets2.get(pending.id);
+      if (!entry2 || entry2 !== pending.entry) return;
+      if (m.resultType !== "success" || typeof m.handledByClientId !== "string") {
+        following(pending.id, entry2, false);
+        clear(entry2);
+        entry2.owner = void 0;
+        return;
+      }
+      if (entry2.owner !== m.handledByClientId) {
+        following(pending.id, entry2, false);
+        clear(entry2);
+        entry2.owner = m.handledByClientId;
+      }
+      if (!entry2.projection) following(pending.id, entry2, true);
+      return;
+    }
+    if (m.type !== "broadcast" || m.targetClientIds && !m.targetClientIds.includes(clientId))
+      return;
+    if (m.method === "ipc-connection-reset") {
+      drop();
+      return;
+    }
+    if (m.method === "client-status-changed" && m.params?.status === "disconnected") {
+      for (const entry2 of targets2.values())
+        if (entry2.owner === m.params.clientId) {
+          clear(entry2);
+          entry2.owner = void 0;
+          entry2.checkedAt = 0;
+        }
+      return;
+    }
+    if (m.method === "thread-stream-following-status-requested" && m.params?.hostId === "local") {
+      const entry2 = targets2.get(m.params.conversationId);
+      if (entry2?.owner === m.sourceClientId)
+        following(m.params.conversationId, entry2, true);
+      return;
+    }
+    if (m.method !== "thread-stream-state-changed" || m.params?.hostId !== "local")
+      return;
+    const id = m.params.conversationId, entry = targets2.get(id);
+    if (!entry || !entry.owner || entry.owner !== m.sourceClientId) return;
+    const c = m.params.change;
+    try {
+      if (m.version !== VERSION || !Number.isSafeInteger(c?.revision) || c.revision < 0)
+        throw Error("version");
+      if (c.type === "snapshot")
+        entry.projection = inputSnapshot(c.conversationState, id);
+      else if (c.type === "patches" && entry.projection && c.baseRevision === entry.revision && c.revision > c.baseRevision)
+        entry.projection = inputPatches(entry.projection, c.patches);
+      else throw Error("revision");
+      const previous = entry.pending;
+      entry.revision = c.revision;
+      entry.pending = JSON.stringify(pendingLiveInput(entry.projection));
+      if (previous !== entry.pending) changed();
+    } catch {
+      clear(entry);
+      following(id, entry, false);
+      entry.owner = void 0;
+      entry.checkedAt = now();
+      entry.retryAt = now() + 6e4;
+    }
+  }
+  function rejectFrame(current) {
+    const route = current.route(), entry = targets2.get(route.conversationId);
+    if (route.method !== "thread-stream-state-changed" || route.hostId !== "local" || !entry?.owner || entry.owner !== route.sourceClientId) {
+      drop(6e4);
+      return false;
+    }
+    following(route.conversationId, entry, false);
+    clear(entry);
+    entry.owner = void 0;
+    entry.checkedAt = now();
+    entry.retryAt = now() + 3e5;
+    for (const [key, pending] of outstanding)
+      if (pending.entry === entry) outstanding.delete(key);
+    return true;
+  }
+  function data(chunk) {
+    let at = 0;
+    try {
+      while (at < chunk.length && socket) {
+        if (!body) {
+          const take2 = Math.min(4 - header.length, chunk.length - at);
+          header = Buffer.concat([header, chunk.subarray(at, at + take2)]);
+          at += take2;
+          if (header.length < 4) return;
+          remaining = header.readUInt32LE();
+          header = Buffer.alloc(0);
+          if (!remaining || remaining > 256 * 1024 * 1024) {
+            drop(6e4);
+            return;
+          }
+          oversized = remaining > MAX_FRAME;
+          body = createInputMetadataParser();
+        }
+        const take = Math.min(remaining, chunk.length - at);
+        if (!body.discard) {
+          try {
+            body.write(
+              chunk.subarray(
+                at,
+                at + (oversized ? Math.min(take, 65536) : take)
+              )
+            );
+            if (oversized) throw Error("oversized-frame");
+          } catch {
+            const failed = body;
+            if (!rejectFrame(failed)) return;
+            failed.destroy();
+            body = { discard: true, destroy() {
+            }, finish: () => void 0 };
+          }
+        }
+        remaining -= take;
+        at += take;
+        if (!remaining) {
+          const current = body;
+          body = void 0;
+          try {
+            const message = current.finish();
+            if (message) receive(message);
+          } catch {
+            if (!rejectFrame(current)) return;
+          } finally {
+            current.destroy();
+          }
+        }
+      }
+    } catch {
+      drop(6e4);
+    }
+  }
+  function tick() {
+    if (disposed || !targets2.size || !socketPath) return;
+    for (const [key, pending] of outstanding)
+      if (now() - pending.at > 4e3) {
+        outstanding.delete(key);
+        const entry = targets2.get(pending.id);
+        if (entry) {
+          following(pending.id, entry, false);
+          clear(entry);
+          entry.owner = void 0;
+        }
+      }
+    if (socket && !clientId && now() - startedAt > 4e3) drop();
+    if (!socket && now() >= retryAt) {
+      try {
+        if (!secure()) {
+          retryAt = now() + 1e4;
+          return;
+        }
+        const connected = connect(socketPath);
+        socket = connected;
+        startedAt = now();
+        connected.on(
+          "connect",
+          () => send({
+            type: "request",
+            requestId: "streamdex-initialize",
+            sourceClientId: "initializing-client",
+            method: "initialize",
+            version: 0,
+            params: { clientType: "streamdex-status-observer" }
+          })
+        );
+        connected.on("data", (chunk) => {
+          if (socket === connected) data(chunk);
+        });
+        connected.on("error", () => {
+          if (socket === connected) drop();
+        });
+        connected.on("close", () => {
+          if (socket === connected) drop();
+        });
+      } catch {
+        drop();
+      }
+    }
+    if (clientId) {
+      for (const [id, entry] of targets2)
+        if (now() - entry.checkedAt >= 15e3 && now() >= (entry.retryAt || 0))
+          discover(id, entry);
+    }
+  }
+  const timer = setInterval(tick, 1e3);
+  timer.unref?.();
+  return {
+    update(ids) {
+      if (disposed) return;
+      const selected = new Set(ids.filter(uuid3).slice(0, 9));
+      for (const [id, entry] of targets2)
+        if (!selected.has(id)) {
+          following(id, entry, false);
+          targets2.delete(id);
+          for (const [key, pending] of outstanding)
+            if (pending.entry === entry) outstanding.delete(key);
+        }
+      for (const id of selected)
+        if (!targets2.has(id)) targets2.set(id, { checkedAt: 0 });
+      if (!targets2.size) drop();
+      else tick();
+    },
+    requestFor(task) {
+      return pendingLiveInput(targets2.get(task?.id)?.projection);
+    },
+    stop() {
+      for (const [id, entry] of targets2) following(id, entry, false);
+      disposed = true;
+      clearInterval(timer);
+      drop();
+      targets2.clear();
+    }
+  };
+}
+
 // src/custom/travel-requests.mjs
 init_define_STREAMDECK_CODEX_BUILD();
 import { openSync as openSync4, closeSync as closeSync4, readSync as readSync4, fstatSync as fstatSync2, statSync as statSync5 } from "node:fs";
@@ -21045,7 +22244,7 @@ function createProjectResolver(path5) {
 }
 
 // src/custom/travel-pilot.mjs
-import { join as join5 } from "node:path";
+import { join as join6 } from "node:path";
 var STALE_MS = 30 * 60 * 1e3;
 var HOLD_MS = 800;
 var MAX_FRAME_AGE = 5500;
@@ -21216,12 +22415,18 @@ function installTravelPilot(deps) {
       `Travel restored ${ledger.restore(store)} read acknowledgements`
     );
   const requestFor = deps.requestFor || createRequestReader();
+  const liveInput = deps.liveInput || createLiveInputObserver(store.codexHome, {
+    onChange: () => void poll({ localOnly: true })
+  });
   const resolveRead = createCodexReadResolver(
-    store.codexHome ? join5(store.codexHome, ".codex-global-state.json") : void 0
+    store.codexHome ? join6(store.codexHome, ".codex-global-state.json") : void 0
   );
-  const withRequest = (task) => task ? { ...resolveRead(task), pendingRequest: requestFor(task) } : task;
+  const withRequest = (task) => task ? {
+    ...resolveRead(task),
+    pendingRequest: liveInput.requestFor(task) || requestFor(task)
+  } : task;
   const resolveProject = deps.projectName || createProjectResolver(
-    store.codexHome ? join5(store.codexHome, ".codex-global-state.json") : void 0
+    store.codexHome ? join6(store.codexHome, ".codex-global-state.json") : void 0
   );
   const modes = /* @__PURE__ */ new Map(), utilityPresses = /* @__PURE__ */ new Map(), pendingUtilities = /* @__PURE__ */ new Set();
   let voiceObserver;
@@ -21372,9 +22577,13 @@ function installTravelPilot(deps) {
     }
   }
   async function poll({ localOnly = false } = {}) {
-    if (!visible.size) return;
+    if (!visible.size) {
+      liveInput.update([]);
+      return;
+    }
     try {
       const sessions = store.sessions(8).map(withRequest), focus2 = withRequest(store.focusedThread());
+      liveInput.update([...sessions.map((task) => task.id), focus2?.id]);
       if (frame.focus?.id !== focus2?.id) {
         generation++;
         readCandidate = void 0;
@@ -21506,7 +22715,13 @@ function installTravelPilot(deps) {
       return timing;
     }
     if (!opened.ok || opened.threadId !== id || !opened.windowId) {
-      const reason = ["dispatch-timeout", "rejected", "invalid", "helper-timeout", "accessibility"].includes(opened.reason) ? opened.reason : "unverified";
+      const reason = [
+        "dispatch-timeout",
+        "rejected",
+        "invalid",
+        "helper-timeout",
+        "accessibility"
+      ].includes(opened.reason) ? opened.reason : "unverified";
       logger2.warn("Travel navigation rejected: " + reason);
       throw new Error("Task navigation was not confirmed");
     }
@@ -21767,6 +22982,7 @@ function installTravelPilot(deps) {
     const oldDisappear = owner.onWillDisappear;
     owner.onWillDisappear = async function(e) {
       visible.delete(e.action.id);
+      if (!visible.size) liveInput.update([]);
       motionCards.delete(e.action.id);
       pressed.delete(e.action.id);
       displayed.delete(e.action.id);
@@ -21795,6 +23011,7 @@ function installTravelPilot(deps) {
       logger2.info("Travel pilot v2 active (Travel settings only)");
     },
     stop() {
+      liveInput.stop();
       clearInterval(timer);
       clearInterval(animationTimer);
       timer = void 0;
@@ -22941,7 +24158,7 @@ var travelPilot = installTravelPilot({
   ...common,
   agentStatus,
   commandHandler: command,
-  readStatePath: join6(stateDirectory, "read.json"),
+  readStatePath: join7(stateDirectory, "read.json"),
   settingsTargets: {}
 });
 var travelVoice = installTravelVoice({ ...common, travelPilot });

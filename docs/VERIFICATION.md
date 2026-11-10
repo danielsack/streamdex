@@ -40,3 +40,11 @@ ambiguous state falls back to the existing ledger. New completions retain a
 short grace period; files over 8 MB are ignored, and unchanged files are cached.
 Check correct-chat navigation and read-state synchronization on both devices
 with the app both foregrounded and backgrounded before claiming compatibility.
+
+## Live tool approvals
+
+The optional local observer uses the app's internal chat stream (protocol version 11). This is not a supported public API. An unavailable socket, unknown version, disconnected owner, or invalid revision falls back to the existing status sources without enabling action controls. It follows existing chat owners and never takes ownership or answers approvals.
+
+The app sends a full initial snapshot; no status-only option is available on this interface. The observer retains at most 256 KiB of routing/request/status metadata per message, discards history and tool arguments while streaming, bounds scalar lengths and nesting, and backs off after invalid or oversized messages. A per-chat failure leaves other indicators intact. Frames above the transport safety limit disconnect the stream. Initial serialization/transfer still costs work in the app.
+
+Verify a real pending app-access or tool approval: INPUT must remain visible while it is unanswered, clear after answering or dismissing it, and recover after restart. Repeat with a large-history chat among the displayed tasks, and confirm navigation and SEEN behavior remain correct. Automated fixture checks do not establish compatibility with every app build.

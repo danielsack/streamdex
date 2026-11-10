@@ -2,6 +2,7 @@ import { createCodexReadResolver } from "./codex-read-state.mjs";
 import { createNativeCaller } from "./travel-native.mjs";
 import { fileURLToPath } from "node:url";
 import { readFileSync } from "node:fs";
+import { createLiveInputObserver } from "./codex-live-input.mjs";
 import { createRequestReader } from "./travel-requests.mjs";
 export { pendingRequest } from "./travel-requests.mjs";
 
@@ -251,13 +252,23 @@ export function installTravelPilot(deps) {
       `Travel restored ${ledger.restore(store)} read acknowledgements`,
     );
   const requestFor = deps.requestFor || createRequestReader();
+  const liveInput =
+    deps.liveInput ||
+    createLiveInputObserver(store.codexHome, {
+      onChange: () => void poll({ localOnly: true }),
+    });
   const resolveRead = createCodexReadResolver(
     store.codexHome
       ? join(store.codexHome, ".codex-global-state.json")
       : undefined,
   );
   const withRequest = (task) =>
-    task ? { ...resolveRead(task), pendingRequest: requestFor(task) } : task;
+    task
+      ? {
+          ...resolveRead(task),
+          pendingRequest: liveInput.requestFor(task) || requestFor(task),
+        }
+      : task;
   const resolveProject =
     deps.projectName ||
     createProjectResolver(
@@ -469,10 +480,14 @@ export function installTravelPilot(deps) {
     }
   }
   async function poll({ localOnly = false } = {}) {
-    if (!visible.size) return;
+    if (!visible.size) {
+      liveInput.update([]);
+      return;
+    }
     try {
       const sessions = store.sessions(8).map(withRequest),
         focus = withRequest(store.focusedThread());
+      liveInput.update([...sessions.map((task) => task.id), focus?.id]);
       if (frame.focus?.id !== focus?.id) {
         generation++;
         readCandidate = undefined;
@@ -642,7 +657,15 @@ export function installTravelPilot(deps) {
       return timing;
     }
     if (!opened.ok || opened.threadId !== id || !opened.windowId) {
-      const reason = ["dispatch-timeout", "rejected", "invalid", "helper-timeout", "accessibility"].includes(opened.reason) ? opened.reason : "unverified";
+      const reason = [
+        "dispatch-timeout",
+        "rejected",
+        "invalid",
+        "helper-timeout",
+        "accessibility",
+      ].includes(opened.reason)
+        ? opened.reason
+        : "unverified";
       logger.warn("Travel navigation rejected: " + reason);
       throw new Error("Task navigation was not confirmed");
     }
@@ -938,6 +961,7 @@ export function installTravelPilot(deps) {
     const oldDisappear = owner.onWillDisappear;
     owner.onWillDisappear = async function (e) {
       visible.delete(e.action.id);
+      if (!visible.size) liveInput.update([]);
       motionCards.delete(e.action.id);
       pressed.delete(e.action.id);
       displayed.delete(e.action.id);
@@ -967,6 +991,7 @@ export function installTravelPilot(deps) {
       logger.info("Travel pilot v2 active (Travel settings only)");
     },
     stop() {
+      liveInput.stop();
       clearInterval(timer);
       clearInterval(animationTimer);
       timer = undefined;

@@ -6,6 +6,8 @@ User-visible changes are recorded here. Versions follow [Semantic Versioning](ht
 
 ### Fixed
 
+- Task cards show INPUT for live tool and app-access approvals, then clear when the request resolves. Large chat snapshots are streamed with bounded metadata and cannot reset other chats through a per-chat size failure.
+
 - Activate the app and deliver the chat link in one OS request, so a slow foreground transition does not discard the first press.
 
 - Completed task cards follow the app's saved read state using bounded, cached reads.
