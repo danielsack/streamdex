@@ -35,8 +35,12 @@ never writes the read ledger or enables chat-specific actions. Those actions
 remain unavailable until exact focus can be verified.
 
 Completed cards can use the app's persisted local unread state when its schema,
-single-account identity, and local-host binding are recognized. Unknown or
-ambiguous state falls back to the existing ledger. New completions retain a
+active account identity, and local-host binding are recognized. Account-owned
+settings are selected using the current renderer owner and matching cached
+account metadata. Unread lists from different accounts or hosts are never merged.
+Missing ownership metadata, signed-out state, and mismatched bindings fall back
+to the existing ledger. Older state without an ownership marker retains the
+single-account compatibility path. New completions retain a
 short grace period; files over 8 MB are ignored, and unchanged files are cached.
 Check correct-chat navigation and read-state synchronization on both devices
 with the app both foregrounded and backgrounded before claiming compatibility.

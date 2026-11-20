@@ -1,4 +1,5 @@
 import { openSync, readSync, closeSync, statSync } from "node:fs";
+import { projectAccountState } from "./codex-account-state.mjs";
 export const MAX_STATE_BYTES = 8 * 1024 * 1024;
 function boundedRead(path) {
   const fd = openSync(path, "r");
@@ -18,23 +19,38 @@ function boundedRead(path) {
 }
 const fingerprint = (s) =>
   [s.dev, s.ino, s.size, s.mtimeMs, s.ctimeMs].join(":");
-// Only a single migrated identity with an explicit local-host binding is known.
-// Missing/malformed/multi-account state is not evidence of a read task.
+const object = (value) =>
+  value !== null && typeof value === "object" && !Array.isArray(value);
+const text = (value) =>
+  typeof value === "string" && value.length > 0 && value.length <= 256;
+// Read only the active identity's exact adopted local host. Never merge accounts
+// or choose the first local host; a missing binding leaves the ledger unchanged.
 export function localUnread(state) {
-  const s = state?.["electron-thread-read-state-v1"];
+  if (!object(state)) return;
+  const s = state["electron-thread-read-state-v1"];
+  if (s?.version !== 1 || !object(s.unreadByIdentity)) return;
+  const m = s.legacyMigration;
+  let identity = projectAccountState(state)?.readIdentity;
   if (
-    s?.version !== 1 ||
-    !s.unreadByIdentity ||
-    typeof s.unreadByIdentity !== "object"
-  )
-    return;
-  const identities = Object.keys(s.unreadByIdentity),
-    m = s.legacyMigration;
-  if (identities.length !== 1 || m?.identityKey !== identities[0]) return;
+    Object.hasOwn(state, "electron-renderer-content-owner") ||
+    Object.hasOwn(state, "electron-account-renderer-state-v1")
+  ) {
+    if (!identity) return;
+  } else {
+    // Compatibility for older, single-identity state without an owner marker.
+    const identities = Object.keys(s.unreadByIdentity);
+    if (
+      identities.length !== 1 ||
+      m?.identityKey !== identities[0] ||
+      m?.cleared === true
+    )
+      return;
+    identity = identities[0];
+  }
   const host = m?.adoptedHostIds?.local;
-  if (typeof host !== "string" || !host.startsWith("local:")) return;
-  const ids = s.unreadByIdentity[identities[0]]?.[host];
-  if (!Array.isArray(ids) || ids.some((id) => typeof id !== "string")) return;
+  if (!text(host) || !host.startsWith("local:")) return;
+  const ids = s.unreadByIdentity[identity]?.[host];
+  if (!Array.isArray(ids) || ids.some((id) => !text(id))) return;
   return new Set(ids);
 }
 export function projectRead(task, unread, modifiedAt, now = Date.now()) {

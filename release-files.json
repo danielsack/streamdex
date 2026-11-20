@@ -118,6 +118,7 @@
     "src/actions/usage.ts",
     "src/actions/workdesk.ts",
     "src/actions/workflow.ts",
+    "src/custom/codex-account-state.mjs",
     "src/custom/codex-live-input.mjs",
     "src/custom/codex-read-state.mjs",
     "src/custom/font-metrics.json",

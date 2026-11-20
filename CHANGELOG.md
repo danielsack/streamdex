@@ -6,6 +6,8 @@ User-visible changes are recorded here. Versions follow [Semantic Versioning](ht
 
 ### Fixed
 
+- Completed cards keep READY/SEEN synchronized when the app stores multiple accounts or moves settings into account-owned storage. The reader selects the verified active account and exact local host, with safe fallback for missing or mismatched identity data.
+
 - Task cards show INPUT for live tool and app-access approvals, then clear when the request resolves. Large chat snapshots are streamed with bounded metadata and cannot reset other chats through a per-chat size failure.
 
 - Activate the app and deliver the chat link in one OS request, so a slow foreground transition does not discard the first press.
