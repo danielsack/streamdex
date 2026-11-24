@@ -41,7 +41,15 @@ account metadata. Unread lists from different accounts or hosts are never merged
 Missing ownership metadata, signed-out state, and mismatched bindings fall back
 to the existing ledger. Older state without an ownership marker retains the
 single-account compatibility path. New completions retain a
-short grace period; files over 8 MB are ignored, and unchanged files are cached.
+short grace period. The reader prefers `.codex-global-state.sqlite` when present,
+using one read-only transaction and indexed queries for the required settings.
+A locked, corrupt, oversized, or unsupported database falls back to the ledger,
+never to the abandoned JSON snapshot. When no database exists, the older JSON
+format remains supported. JSON reads are capped at 8 MiB; database and WAL files
+at 64 MiB each; selected SQLite values at 8 MiB total, with tighter per-key limits.
+There is no lock wait or persistent database connection. Database and WAL file
+identities invalidate the cache; an empty WAL cannot advance the read-evidence
+timestamp. Unchanged files are cached, with the existing one-second poll limit.
 Check correct-chat navigation and read-state synchronization on both devices
 with the app both foregrounded and backgrounded before claiming compatibility.
 

@@ -6,6 +6,8 @@ User-visible changes are recorded here. Versions follow [Semantic Versioning](ht
 
 ### Fixed
 
+- Completed cards continue to follow READY/SEEN after Codex migrates settings from JSON to SQLite. The reader uses bounded, read-only queries, detects WAL updates, and never reuses stale JSON when the database is unavailable.
+
 - Completed cards keep READY/SEEN synchronized when the app stores multiple accounts or moves settings into account-owned storage. The reader selects the verified active account and exact local host, with safe fallback for missing or mismatched identity data.
 
 - Task cards show INPUT for live tool and app-access approvals, then clear when the request resolves. Large chat snapshots are streamed with bounded metadata and cannot reset other chats through a per-chat size failure.

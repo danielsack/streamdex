@@ -1,3 +1,4 @@
+import { createSqliteStateReader } from "./codex-global-state.mjs";
 import { openSync, readSync, closeSync, statSync } from "node:fs";
 import { projectAccountState } from "./codex-account-state.mjs";
 export const MAX_STATE_BYTES = 8 * 1024 * 1024;
@@ -66,6 +67,7 @@ export function createCodexReadResolver(
   path,
   { now = Date.now, read = boundedRead, stat = statSync } = {},
 ) {
+  const sqliteState = createSqliteStateReader(path);
   let next = 0,
     unread,
     modifiedAt = 0,
@@ -74,24 +76,31 @@ export function createCodexReadResolver(
     if (path && now() >= next) {
       next = now() + 1000;
       try {
-        const before = stat(path),
-          key = fingerprint(before);
-        if (
-          !Number.isFinite(before.size) ||
-          before.size < 0 ||
-          before.size > MAX_STATE_BYTES
-        )
-          throw Error("State exceeds read budget");
-        if (key !== cached) {
-          const text = read(path, "utf8");
-          if (Buffer.byteLength(text, "utf8") > MAX_STATE_BYTES)
+        const snapshot = sqliteState();
+        if (snapshot) {
+          unread = localUnread(snapshot.state);
+          modifiedAt = snapshot.modifiedAt;
+          cached = undefined;
+        } else {
+          const before = stat(path),
+            key = fingerprint(before);
+          if (
+            !Number.isFinite(before.size) ||
+            before.size < 0 ||
+            before.size > MAX_STATE_BYTES
+          )
             throw Error("State exceeds read budget");
-          const state = JSON.parse(text),
-            after = stat(path);
-          if (key !== fingerprint(after)) throw Error("Changed during read");
-          unread = localUnread(state);
-          modifiedAt = after.mtimeMs;
-          cached = key;
+          if (key !== cached) {
+            const text = read(path, "utf8");
+            if (Buffer.byteLength(text, "utf8") > MAX_STATE_BYTES)
+              throw Error("State exceeds read budget");
+            const state = JSON.parse(text),
+              after = stat(path);
+            if (key !== fingerprint(after)) throw Error("Changed during read");
+            unread = localUnread(state);
+            modifiedAt = after.mtimeMs;
+            cached = key;
+          }
         }
       } catch {
         unread = undefined;
